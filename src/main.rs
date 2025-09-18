@@ -19,12 +19,23 @@ struct Post {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Thread {
+    id: String, // OID?
+    board_id: String,
     posts: Vec<Post>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Board {
+    id: String,
+    name: String,
+    tagline: String
+}
+
 #[debug_handler]
-async fn get_threads() -> Json<Thread> {
-    Json(Thread {
+async fn get_threads() -> Json<Vec<Thread>> {
+    Json(vec![Thread {
+        id: "1".to_string(),
+        board_id: "1".to_string(),
         posts: vec![Post {
             id: "1".to_string(),
             name: "anon".to_string(),
@@ -32,5 +43,5 @@ async fn get_threads() -> Json<Thread> {
             content: "hello, world".to_string(),
             media_url: "https://example.com/".to_string(),
         }],
-    })
+    }])
 }
