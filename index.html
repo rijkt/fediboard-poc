@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+
+<head></head>
+
+<body>
+    <form action="http://localhost:8080/api/threads" method="post" enctype="multipart/form-data">
+        <input type="text" name="name"> <label>
+            Upload file:
+            <input type="file" name="file" multiple>
+        </label>
+
+        <input type="submit" value="Upload files">
+    </form>
+
+
+    <form action="http://localhost:8080/api/threads" method="post" enctype="application/x-www-form-urlencoded">
+        <input type="text" name="name">
+        <input type="text" name="subject">
+        <input type="text" name="media_url">
+        <textarea name="content"></textarea>
+        <input type="submit" value="Post">
+    </form>
+</body>
+
+</html>
