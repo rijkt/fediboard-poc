@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use axum::{Router, extract::Path, response::Json, routing::get};
+use axum::{
+    Form, Router,
+    extract::{Multipart, Path},
+    response::Json,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 #[tokio::main]
@@ -11,9 +16,11 @@ async fn main() {
             get(async || "Hello from the fediboard api".to_string()),
         )
         .route("/threads", get(get_threads))
+        .route("/threads", post(create_thread))
         .route("/threads/{thread_id}", get(get_thread))
         .route("/threads/{thread_id}/posts", get(get_posts))
-        .route("/threads/{thread_id}/posts/{post_id}", get(get_post));
+        .route("/threads/{thread_id}/posts/{post_id}", get(get_post))
+        .route("/files", post(upload_file));
 
     let app_routes = Router::new()
         .route("/", get(async || "Hello from the fediboard".to_string()))
@@ -40,6 +47,14 @@ struct Thread {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct PostCreation {
+    name: String, // poster name
+    subject: String,
+    content: String,
+    media_url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct Board {
     id: String,
     name: String,
@@ -54,6 +69,30 @@ async fn get_threads() -> Json<Vec<Thread>> {
 async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<Thread> {
     let _thread_id = params.get("thread_id");
     Json(mock_thread())
+}
+
+async fn create_thread(Form(post_creation): Form<PostCreation>) -> Json<Thread> {
+    let original_post = Post {
+        id: "1".to_string(),
+        name: post_creation.name,
+        subject: post_creation.subject,
+        content: post_creation.content,
+        media_url: post_creation.media_url,
+    };
+    Json(Thread {
+        id: "1".to_owned(),
+        board_id: "1".to_owned(),
+        posts: vec![original_post],
+    })
+}
+
+async fn upload_file(mut multipart: Multipart) {
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        let name = field.name().unwrap().to_string();
+        let data = field.bytes().await.unwrap(); // check result for errors (e.g. 2MB maximum)
+        println!("Length of `{}` is {} bytes", name, data.len());
+    }
+    // TODO: upload to store, return url
 }
 
 async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Post>> {
