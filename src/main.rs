@@ -3,9 +3,19 @@ use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/threads", get(get_threads));
+    let api_routes = Router::new()
+        .route(
+            "/",
+            get(async || "Hello from the fediboard api".to_string()),
+        )
+        .route("/threads", get(get_threads));
+
+    let app_routes = Router::new()
+        .route("/", get(async || "Hello from the fediboard".to_string()))
+        .nest("/api", api_routes);
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app_routes).await.unwrap();
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,7 +38,7 @@ struct Thread {
 struct Board {
     id: String,
     name: String,
-    tagline: String
+    tagline: String,
 }
 
 #[debug_handler]
