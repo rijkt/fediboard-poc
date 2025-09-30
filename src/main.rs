@@ -17,7 +17,7 @@ async fn main() {
         .await
         .unwrap();
 
-    sqlx::migrate!().run(&pool).await;
+    let _ = sqlx::migrate!("./migrations").run(&pool).await;
     let app_routes = routing::build_routes();
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app_routes).await.unwrap();
