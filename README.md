@@ -11,7 +11,7 @@ Run the service with:
  podman run --replace --name fedi-db -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=fediboard -p 5432:5432 -d docker.io/postgres:17
 
 
-DATABASE_URL=psql://postgres:mysecretpassword@localhost:5432/fediboard cargo run
+DATABASE_URL=postgres://postgres:mysecretpassword@localhost:5432/fediboard cargo run
 ```
 
  ## License
