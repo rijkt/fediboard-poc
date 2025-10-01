@@ -14,5 +14,10 @@ Run the service with:
 DATABASE_URL=postgres://postgres:mysecretpassword@localhost:5432/fediboard cargo run
 ```
 
+Add a pre-commit hook to generate sqlx query metadata automatically:
+```bash
+cargo sqlx prepare > /dev/null 2>&1; git add .sqlx > /dev/null
+```
+
  ## License
  See [LICENSE](LICENSE).
