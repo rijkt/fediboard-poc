@@ -2,6 +2,8 @@ use std::env;
 
 use sqlx::postgres::PgPoolOptions;
 
+use crate::board::Board;
+
 mod board;
 mod file;
 mod routing;
@@ -17,7 +19,18 @@ async fn main() {
         .await
         .unwrap();
 
-    let _ = sqlx::migrate!("./migrations").run(&pool).await;
+    let boards = sqlx::query_as!(
+        Board,
+        // language=PostgreSQL
+        r#"
+            select board_id, name
+            from board
+        "#
+    )
+    .fetch_all(&pool)
+    .await;
+    println!("{:?}", boards);
+
     let app_routes = routing::build_routes();
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app_routes).await.unwrap();
