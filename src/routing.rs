@@ -3,11 +3,12 @@ use crate::{
     thread::{create_thread, get_post, get_posts, get_thread, get_threads},
 };
 use axum::{
-    Router,
+    Extension, Router,
     routing::{get, post},
 };
+use sqlx::{Pool, Postgres};
 
-pub(crate) fn build_routes() -> Router {
+pub(crate) fn build_routes(db_pool: Pool<Postgres>) -> Router {
     let api_routes = Router::new()
         .route(
             "/",
@@ -22,4 +23,5 @@ pub(crate) fn build_routes() -> Router {
     Router::new()
         .route("/", get(async || "Hello from the fediboard".to_string()))
         .nest("/api", api_routes)
+        .layer(Extension(db_pool))
 }
