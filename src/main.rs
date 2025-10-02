@@ -1,5 +1,3 @@
-use std::env;
-
 use sqlx::postgres::PgPoolOptions;
 
 use crate::board::Board;
@@ -12,7 +10,8 @@ mod thread;
 #[tokio::main]
 async fn main() {
     let db_url =
-        env::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
+        dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(db_url.as_str())
@@ -21,7 +20,6 @@ async fn main() {
 
     let boards = sqlx::query_as!(
         Board,
-        // language=PostgreSQL
         r#"
             select board_id, name
             from board
