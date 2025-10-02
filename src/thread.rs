@@ -28,13 +28,17 @@ pub(crate) fn routes() -> Router {
 }
 
 async fn get_threads(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Thread>> {
-    let _board_name = params.get("board_name").expect("board_name is required to get all threads");
+    let _board_name = params
+        .get("board_name")
+        .expect("board_name is required to get all threads");
     let thread = mock_thread();
     Json(vec![thread])
 }
 
 async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<Thread> {
-    let _board_name = params.get("board_name").expect("board_name is required to get all threads");
+    let _board_name = params
+        .get("board_name")
+        .expect("board_name is required to get all threads");
     let _thread_id = params.get("thread_id");
     Json(mock_thread())
 }

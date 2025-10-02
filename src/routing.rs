@@ -2,10 +2,7 @@ use crate::{
     board::{self},
     file::{self},
 };
-use axum::{
-    Extension, Router,
-    routing::get,
-};
+use axum::{Extension, Router, routing::get};
 use sqlx::{Pool, Postgres};
 
 pub(crate) fn build_routes(db_pool: Pool<Postgres>) -> Router {
