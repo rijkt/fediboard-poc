@@ -1,12 +1,9 @@
-mod post;
-mod thread;
+mod handler;
 
-use crate::thread::post::{Post, mock_post};
-use crate::thread::thread::{Thread, mock_thread};
-use axum::response::Json;
-use axum::{Form, extract::Path};
+use axum::{Router, routing::get, routing::post};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct PostCreation {
@@ -16,39 +13,45 @@ pub(crate) struct PostCreation {
     pub(crate) media_url: String,
 }
 
-pub(crate) async fn get_threads() -> Json<Vec<Thread>> {
-    let thread = mock_thread();
-    Json(vec![thread])
+pub(crate) fn routes() -> Router {
+    Router::new()
+        .route("/", get(get_threads))
+        .route("/", post(create_thread))
+        .route("/{thread_id}", get(get_thread))
+        .route("/{thread_id}/posts", get(get_posts))
+        .route("/{thread_id}/posts/{post_id}", get(get_post))
 }
 
-pub(crate) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<Thread> {
-    let _thread_id = params.get("thread_id");
-    Json(mock_thread())
+#[derive(Debug, Serialize, Deserialize)]
+struct Post {
+    pub(crate) id: String,   // OID?
+    pub(crate) name: String, // poster name
+    pub(crate) subject: String,
+    pub(crate) content: String,
+    pub(crate) media_url: String,
 }
 
-pub(crate) async fn create_thread(Form(post_creation): Form<PostCreation>) -> Json<Thread> {
-    let original_post = Post {
+fn mock_post() -> Post {
+    Post {
         id: "1".to_string(),
-        name: post_creation.name,
-        subject: post_creation.subject,
-        content: post_creation.content,
-        media_url: post_creation.media_url,
-    };
-    Json(Thread {
-        id: "1".to_owned(),
-        board_id: "1".to_owned(),
-        posts: vec![original_post],
-    })
+        name: "anon".to_string(),
+        subject: "test".to_string(),
+        content: "hello, world".to_string(),
+        media_url: "https://example.com/".to_string(),
+    }
 }
 
-pub(crate) async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Post>> {
-    let _thread_id = params.get("thread_id");
-    let _post_id = params.get("post_id");
-    Json(vec![mock_post()])
+#[derive(Debug, Serialize, Deserialize)]
+struct Thread {
+    pub(crate) id: String, // OID?
+    pub(crate) board_id: String,
+    pub(crate) posts: Vec<Post>,
 }
 
-pub(crate) async fn get_post(Path(params): Path<HashMap<String, String>>) -> Json<Post> {
-    let _thread_id = params.get("thread_id");
-    let _post_id = params.get("post_id");
-    Json(mock_post())
+fn mock_thread() -> Thread {
+    Thread {
+        id: "1".to_string(),
+        board_id: "1".to_string(),
+        posts: vec![mock_post()],
+    }
 }
