@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct PostCreation {
-    pub(crate) name: String, // poster name
-    pub(crate) subject: String,
-    pub(crate) content: String,
-    pub(crate) media_url: String,
+struct PostCreation {
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
 }
 
 pub(crate) fn routes() -> Router {
@@ -24,26 +24,26 @@ pub(crate) fn routes() -> Router {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Post {
-    pub(crate) id: String,   // OID?
-    pub(crate) name: String, // poster name
-    pub(crate) subject: String,
-    pub(crate) content: String,
-    pub(crate) media_url: String,
+    id: String,
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
 }
 
 fn mock_post() -> Post {
     Post {
         id: "1".to_string(),
-        name: "anon".to_string(),
-        subject: "test".to_string(),
-        content: "hello, world".to_string(),
-        media_url: "https://example.com/".to_string(),
+        name: Some("anon".to_string()),
+        subject: Some("test".to_string()),
+        content: Some("hello, world".to_string()),
+        media_url: Some("https://example.com/".to_string()),
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Thread {
-    pub(crate) id: String, // OID?
+    pub(crate) id: String,
     pub(crate) board_id: String,
     pub(crate) posts: Vec<Post>,
 }
