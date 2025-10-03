@@ -1,11 +1,7 @@
 use axum::{Form, Json, extract::Path};
 use std::collections::HashMap;
 
-use crate::thread::{
-    PostCreation,
-    post::{Post, mock_post},
-    thread::{Thread, mock_thread},
-};
+use crate::thread::{mock_post, mock_thread, Post, PostCreation, Thread};
 
 pub(super) async fn get_threads(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Thread>> {
     let _board_name = params
