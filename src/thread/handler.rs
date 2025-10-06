@@ -1,7 +1,6 @@
 use axum::{Extension, Form, Json, extract::Path};
 use sqlx::{PgPool, types::Uuid};
 use std::collections::HashMap;
-use sqlx::types::Json as Jsonb;
 
 use crate::{
     board::Board,
@@ -46,7 +45,7 @@ pub(super) async fn create_thread(
     .await
     .expect("Failure fetching board {board_name}");
 
-    let original_post = Post {
+    let _original_post = Post {
         id: Uuid::new_v4().to_string(),
         name: post_creation.name,
         subject: post_creation.subject,
@@ -54,18 +53,18 @@ pub(super) async fn create_thread(
         media_url: post_creation.media_url,
     };
 
-    sqlx::query_as!(
+    let created = sqlx::query_as!(
         Thread,
         r#"
-        insert into thread(board_id, posts)
-                values ($1, $2)
+        insert into thread(board_id)
+                values ($1)
+                returning thread_id, board_id
         "#,
-        board.board_id,
-        Jsonb(vec![original_post])
+        board.board_id // Jsonb(vec![original_post])
     )
     .fetch_one(&*db_pool)
-    .await;
-
+    .await
+    .expect("Error creating thread");
     Json(created)
 }
 
