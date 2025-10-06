@@ -2,7 +2,6 @@ mod handler;
 
 use axum::{Router, routing::get, routing::post};
 use serde::{Deserialize, Serialize};
-use sqlx::types::Json;
 
 use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
 
@@ -45,14 +44,15 @@ fn mock_post() -> Post {
 #[derive(Debug, Serialize, Deserialize)]
 struct Thread {
     pub(crate) thread_id: String,
-    pub(crate) board_id: String,
-    pub(crate) posts: Json<Vec<Post>>,
+    pub(crate) board_id: String
+        //     #[sqlx(json)]
+    // pub(crate) posts: Json<Vec<Post>>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
 }
 
 fn mock_thread() -> Thread {
     Thread {
         thread_id: "1".to_string(),
         board_id: "1".to_string(),
-        posts: Json(vec![mock_post()]),
+        // posts: Json(vec![mock_post()]),
     }
 }
