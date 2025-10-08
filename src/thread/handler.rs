@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     board::Board,
-    thread::{Post, PostCreation, Thread, ThreadView, mock_post, mock_thread},
+    thread::{Post, PostCreation, PostView, Thread, ThreadView, mock_post, mock_thread},
 };
 
 pub(super) async fn get_threads(
@@ -74,13 +74,13 @@ pub(super) async fn create_thread(
     })
 }
 
-pub(super) async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Post>> {
+pub(super) async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<PostView>> {
     let _thread_id = params.get("thread_id");
     let _post_id = params.get("post_id");
     Json(vec![mock_post()])
 }
 
-pub(super) async fn get_post(Path(params): Path<HashMap<String, String>>) -> Json<Post> {
+pub(super) async fn get_post(Path(params): Path<HashMap<String, String>>) -> Json<PostView> {
     let _thread_id = params.get("thread_id");
     let _post_id = params.get("post_id");
     Json(mock_post())
