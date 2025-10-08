@@ -41,18 +41,27 @@ fn mock_post() -> Post {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Thread {
-    pub(crate) thread_id: String,
-    pub(crate) board_id: String
-        //     #[sqlx(json)]
-    // pub(crate) posts: Json<Vec<Post>>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
+struct Posts {
+    posts: Vec<Post>,
 }
 
-fn mock_thread() -> Thread {
-    Thread {
+#[derive(Debug, Serialize, Deserialize)]
+
+struct ThreadView {
+    pub(crate) thread_id: String,
+    pub(crate) board_id: String,
+}
+
+struct Thread {
+    pub(crate) thread_id: String,
+    pub(crate) board_id: String,
+    //     #[sqlx(json)]
+    // pub(crate) posts: Json<Posts>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
+}
+
+fn mock_thread() -> ThreadView {
+    ThreadView {
         thread_id: "1".to_string(),
         board_id: "1".to_string(),
-        // posts: Json(vec![mock_post()]),
     }
 }

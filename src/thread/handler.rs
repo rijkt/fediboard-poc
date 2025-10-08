@@ -4,10 +4,12 @@ use std::collections::HashMap;
 
 use crate::{
     board::Board,
-    thread::{Post, PostCreation, Thread, mock_post, mock_thread},
+    thread::{Post, PostCreation, Thread, ThreadView, mock_post, mock_thread},
 };
 
-pub(super) async fn get_threads(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Thread>> {
+pub(super) async fn get_threads(
+    Path(params): Path<HashMap<String, String>>,
+) -> Json<Vec<ThreadView>> {
     let _board_name: &String = params
         .get("board_name")
         .expect("board_name is required to get all threads");
@@ -15,7 +17,7 @@ pub(super) async fn get_threads(Path(params): Path<HashMap<String, String>>) -> 
     Json(vec![thread])
 }
 
-pub(super) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<Thread> {
+pub(super) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<ThreadView> {
     let _board_name = params
         .get("board_name")
         .expect("board_name is required to get all threads");
@@ -27,7 +29,7 @@ pub(super) async fn create_thread(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
     Form(post_creation): Form<PostCreation>,
-) -> Json<Thread> {
+) -> Json<ThreadView> {
     let board_name: &String = params
         .get("board_name")
         .expect("board_name is required to create a threads");
@@ -65,7 +67,11 @@ pub(super) async fn create_thread(
     .fetch_one(&*db_pool)
     .await
     .expect("Error creating thread");
-    Json(created)
+
+    Json(ThreadView {
+        thread_id: created.thread_id,
+        board_id: created.board_id,
+    })
 }
 
 pub(super) async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<Post>> {
