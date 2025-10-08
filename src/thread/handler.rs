@@ -48,7 +48,7 @@ pub(super) async fn create_thread(
     .expect("Failure fetching board {board_name}");
 
     let original_post = Post {
-        id: Uuid::new_v4().to_string(),
+        id: Uuid::new_v4(),
         name: post_creation.name,
         subject: post_creation.subject,
         content: post_creation.content,
@@ -60,7 +60,7 @@ pub(super) async fn create_thread(
     let created = sqlx::query_as::<_, Thread>(
         r#"
         insert into thread(board_id, posts)
-                values ($1, $2)
+                values (uuid($1), $2)
                 returning thread_id, board_id, posts
         "#,
     ).bind(board.board_id)
@@ -70,8 +70,8 @@ pub(super) async fn create_thread(
     .expect("Error creating thread");
 
     Json(ThreadView {
-        thread_id: created.thread_id,
-        board_id: created.board_id,
+        thread_id: created.thread_id.into(),
+        board_id: created.board_id.into(),
     })
 }
 

@@ -4,6 +4,7 @@ use axum::{routing::{get, post}, Router};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use sqlx::types::Json;
+use uuid::Uuid;
 
 use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
 
@@ -35,7 +36,7 @@ struct PostView {
 
 #[derive(Serialize, Deserialize)]
 struct Post {
-    id: String,
+    id: Uuid,
     name: Option<String>, // poster name
     subject: Option<String>,
     content: Option<String>,
@@ -66,8 +67,8 @@ struct ThreadView {
 
 #[derive(FromRow)]
 struct Thread {
-    pub(crate) thread_id: String,
-    pub(crate) board_id: String,
+    pub(crate) thread_id: Uuid,
+    pub(crate) board_id: Uuid,
     //     #[sqlx(json)]
     pub(crate) posts: Json<Posts>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
 }
