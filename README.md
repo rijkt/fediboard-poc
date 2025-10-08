@@ -38,9 +38,9 @@ The `supabase.postgrestools` language server is used for editing *Postgres* file
 
 Fediboard expects the following environment variables to be set. Usage of `.env` files is supported using [dotenvy](https://github.com/allan2/dotenvy).
 
-| NAME           | EXAMPLE                                                     |
-| -------------- | ----------------------------------------------------------- |
-| DATABASE_URL   | psql://postgres:mysecretpassword@localhost:5432/fediboard   |
+| NAME         | EXAMPLE                                                       |
+| ------------ | ------------------------------------------------------------- |
+| DATABASE_URL | postgres://postgres:mysecretpassword@localhost:5432/fediboard |
 
 ## License
 
