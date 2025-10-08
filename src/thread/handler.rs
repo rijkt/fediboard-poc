@@ -1,10 +1,10 @@
 use axum::{Extension, Form, Json, extract::Path};
-use sqlx::{PgPool, types::Uuid};
+use sqlx::{PgPool, types::Uuid, types::Json as Sqlx_json};
 use std::collections::HashMap;
 
 use crate::{
     board::Board,
-    thread::{Post, PostCreation, PostView, Thread, ThreadView, mock_post, mock_thread},
+    thread::{mock_post, mock_thread, Post, PostCreation, PostView, Posts, Thread, ThreadView},
 };
 
 pub(super) async fn get_threads(
@@ -47,7 +47,7 @@ pub(super) async fn create_thread(
     .await
     .expect("Failure fetching board {board_name}");
 
-    let _original_post = Post {
+    let original_post = Post {
         id: Uuid::new_v4().to_string(),
         name: post_creation.name,
         subject: post_creation.subject,
@@ -55,15 +55,16 @@ pub(super) async fn create_thread(
         media_url: post_creation.media_url,
     };
 
-    let created = sqlx::query_as!(
-        Thread,
+    let post_ser = Sqlx_json(Posts{posts: vec![original_post]});
+
+    let created = sqlx::query_as::<_, Thread>(
         r#"
-        insert into thread(board_id)
-                values ($1)
-                returning thread_id, board_id
+        insert into thread(board_id, posts)
+                values ($1, $2)
+                returning thread_id, board_id, posts
         "#,
-        board.board_id // Jsonb(vec![original_post])
-    )
+    ).bind(board.board_id)
+    .bind(post_ser)
     .fetch_one(&*db_pool)
     .await
     .expect("Error creating thread");

@@ -1,7 +1,9 @@
 mod handler;
 
-use axum::{Router, routing::get, routing::post};
+use axum::{routing::{get, post}, Router};
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
+use sqlx::types::Json;
 
 use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
 
@@ -62,11 +64,12 @@ struct ThreadView {
     pub(crate) board_id: String,
 }
 
+#[derive(FromRow)]
 struct Thread {
     pub(crate) thread_id: String,
     pub(crate) board_id: String,
     //     #[sqlx(json)]
-    // pub(crate) posts: Json<Posts>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
+    pub(crate) posts: Json<Posts>, // TODO: https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html#json
 }
 
 fn mock_thread() -> ThreadView {
