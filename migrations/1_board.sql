@@ -14,6 +14,6 @@ values
 create table
     "thread" (
         thread_id uuid primary key default gen_random_uuid (),
-        board_id text not null,
+        board_id uuid not null,
         posts jsonb not null
     );
