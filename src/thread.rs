@@ -23,6 +23,15 @@ pub(crate) fn routes() -> Router {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct PostView {
+    id: String,
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
 struct Post {
     id: String,
     name: Option<String>, // poster name
@@ -31,8 +40,8 @@ struct Post {
     media_url: Option<String>,
 }
 
-fn mock_post() -> Post {
-    Post {
+fn mock_post() -> PostView {
+    PostView { 
         id: "1".to_string(),
         name: Some("anon".to_string()),
         subject: Some("test".to_string()),
@@ -41,6 +50,7 @@ fn mock_post() -> Post {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 struct Posts {
     posts: Vec<Post>,
 }
