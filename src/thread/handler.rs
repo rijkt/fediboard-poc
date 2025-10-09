@@ -1,11 +1,25 @@
 use axum::{Extension, Form, Json, extract::Path};
-use sqlx::{PgPool, types::Uuid, types::Json as Sqlx_json};
+use serde::{Deserialize, Serialize};
+use sqlx::{PgPool, types::Json as Sqlx_json, types::Uuid};
 use std::collections::HashMap;
 
 use crate::{
     board::Board,
-    thread::{mock_post, mock_thread, Post, PostCreation, PostView, Posts, Thread, ThreadView},
+    thread::{Post, Posts, Thread},
 };
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct ThreadView {
+    pub(crate) thread_id: String,
+    pub(crate) board_id: String,
+}
+
+fn mock_thread() -> ThreadView {
+    ThreadView {
+        thread_id: "1".to_string(),
+        board_id: "1".to_string(),
+    }
+}
 
 pub(super) async fn get_threads(
     Path(params): Path<HashMap<String, String>>,
@@ -23,6 +37,14 @@ pub(super) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> J
         .expect("board_name is required to get all threads");
     let _thread_id = params.get("thread_id");
     Json(mock_thread())
+}
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct PostCreation {
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
 }
 
 pub(super) async fn create_thread(
@@ -55,7 +77,9 @@ pub(super) async fn create_thread(
         media_url: post_creation.media_url,
     };
 
-    let post_ser = Sqlx_json(Posts{posts: vec![original_post]});
+    let post_ser = Sqlx_json(Posts {
+        posts: vec![original_post],
+    });
 
     let created = sqlx::query_as::<_, Thread>(
         r#"
@@ -63,7 +87,8 @@ pub(super) async fn create_thread(
                 values (uuid($1), $2)
                 returning thread_id, board_id, posts
         "#,
-    ).bind(board.board_id)
+    )
+    .bind(board.board_id)
     .bind(post_ser)
     .fetch_one(&*db_pool)
     .await
@@ -73,6 +98,25 @@ pub(super) async fn create_thread(
         thread_id: created.thread_id.into(),
         board_id: created.board_id.into(),
     })
+}
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct PostView {
+    id: String,
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
+}
+
+fn mock_post() -> PostView {
+    PostView {
+        id: "1".to_string(),
+        name: Some("anon".to_string()),
+        subject: Some("test".to_string()),
+        content: Some("hello, world".to_string()),
+        media_url: Some("https://example.com/".to_string()),
+    }
 }
 
 pub(super) async fn get_posts(Path(params): Path<HashMap<String, String>>) -> Json<Vec<PostView>> {
