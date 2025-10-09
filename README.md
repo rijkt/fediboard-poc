@@ -41,6 +41,7 @@ Fediboard expects the following environment variables to be set. Usage of `.env`
 | NAME         | EXAMPLE                                                       |
 | ------------ | ------------------------------------------------------------- |
 | DATABASE_URL | postgres://postgres:mysecretpassword@localhost:5432/fediboard |
+| PORT         | 8080                                                          |
 
 ## License
 
