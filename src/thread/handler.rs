@@ -103,11 +103,18 @@ pub(super) async fn create_thread(
     .await
     .expect("Error creating thread");
 
+    let posts: &Posts = &*created.posts;
     Json(ThreadView {
         thread_id: created.thread_id.into(),
         board_id: created.board_id.into(),
         posts: PostsView{
-            posts: vec![mock_post()]
+            posts: posts.posts.iter().map(|p| PostView{
+                id: p.id.to_string(),
+                name: p.name.clone(),
+                subject: p.subject.clone(),
+                content: p.content.clone(),
+                media_url: p.media_url.clone(),
+            }).collect()
         }
     })
 }
