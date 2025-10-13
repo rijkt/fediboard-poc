@@ -8,17 +8,26 @@ use crate::{
     thread::{Post, Posts, Thread},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct PostsView {
+    pub(crate) posts: Vec<PostView>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub(super) struct ThreadView {
     pub(crate) thread_id: String,
     pub(crate) board_id: String,
+    pub(crate) posts: PostsView
 }
 
 fn mock_thread() -> ThreadView {
     ThreadView {
         thread_id: "1".to_string(),
         board_id: "1".to_string(),
+        posts: PostsView {
+            posts: vec![mock_post()]
     }
+}
 }
 
 pub(super) async fn get_threads(
@@ -97,6 +106,9 @@ pub(super) async fn create_thread(
     Json(ThreadView {
         thread_id: created.thread_id.into(),
         board_id: created.board_id.into(),
+        posts: PostsView{
+            posts: vec![mock_post()]
+        }
     })
 }
 
