@@ -1,12 +1,13 @@
 use axum::{Extension, Json, Router, routing::get};
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
+use uuid::Uuid;
 
 use crate::thread;
 
 #[derive(FromRow, Serialize)]
 pub(crate) struct Board {
-    pub(crate) board_id: String,
+    pub(crate) board_id: Uuid,
     pub(crate) name: String,
     // pub(crate) tagline: Option<String>,
 }
