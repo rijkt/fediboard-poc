@@ -17,7 +17,7 @@ pub(crate) struct PostsView {
 pub(super) struct ThreadView {
     pub(crate) thread_id: String,
     pub(crate) board_id: String,
-    pub(crate) posts: PostsView
+    pub(crate) posts: PostsView,
 }
 
 fn mock_thread() -> ThreadView {
@@ -25,9 +25,9 @@ fn mock_thread() -> ThreadView {
         thread_id: "1".to_string(),
         board_id: "1".to_string(),
         posts: PostsView {
-            posts: vec![mock_post()]
+            posts: vec![mock_post()],
+        },
     }
-}
 }
 
 pub(super) async fn get_threads(
@@ -103,20 +103,28 @@ pub(super) async fn create_thread(
     .await
     .expect("Error creating thread");
 
-    let posts: &Posts = &*created.posts;
-    Json(ThreadView {
-        thread_id: created.thread_id.into(),
-        board_id: created.board_id.into(),
-        posts: PostsView{
-            posts: posts.posts.iter().map(|p| PostView{
-                id: p.id.to_string(),
-                name: p.name.clone(),
-                subject: p.subject.clone(),
-                content: p.content.clone(),
-                media_url: p.media_url.clone(),
-            }).collect()
-        }
-    })
+    Json(to_view(created))
+}
+
+fn to_view(thread: Thread) -> ThreadView {
+    let posts: &Posts = &*thread.posts;
+    ThreadView {
+        thread_id: thread.thread_id.into(),
+        board_id: thread.board_id.into(),
+        posts: PostsView {
+            posts: posts
+                .posts
+                .iter()
+                .map(|p| PostView {
+                    id: p.id.to_string(),
+                    name: p.name.clone(),
+                    subject: p.subject.clone(),
+                    content: p.content.clone(),
+                    media_url: p.media_url.clone(),
+                })
+                .collect(),
+        },
+    }
 }
 
 #[derive(Serialize, Deserialize)]
