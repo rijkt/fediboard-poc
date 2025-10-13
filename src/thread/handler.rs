@@ -1,10 +1,13 @@
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, types::Json as Sqlx_json, types::Uuid};
+use sqlx::{
+    PgPool,
+    types::{Json as Sqlx_json, Uuid},
+};
 use std::collections::HashMap;
 
 use crate::{
-    board::Board,
+    board::fetch_board_by_name,
     thread::{Post, Posts, Thread},
 };
 
@@ -65,18 +68,10 @@ pub(super) async fn create_thread(
         .get("board_name")
         .expect("board_name is required to create a threads");
 
-    let board = sqlx::query_as!(
-        Board,
-        r#"
-            select board_id, name
-            from board
-            where $1 = name
-        "#,
-        board_name.clone()
-    )
-    .fetch_one(&*db_pool)
-    .await
-    .expect("Failure fetching board {board_name}");
+    let board = fetch_board_by_name(board_name)
+        .fetch_one(&*db_pool)
+        .await
+        .expect("Failure fetching board {board_name}");
 
     let original_post = Post {
         id: Uuid::new_v4(),

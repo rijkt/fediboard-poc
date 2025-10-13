@@ -1,10 +1,10 @@
 use axum::{Extension, Json, Router, routing::get};
-use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use serde::Serialize;
+use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
 
 use crate::thread;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(FromRow, Serialize)]
 pub(crate) struct Board {
     pub(crate) board_id: String,
     pub(crate) name: String,
@@ -29,4 +29,17 @@ async fn get_boards(db_pool: Extension<PgPool>) -> Json<Vec<Board>> {
     .await
     .expect("Failure fetching boards");
     Json(boards)
+}
+
+pub(crate) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
+
+pub(crate) fn fetch_board_by_name(board_name: &String) -> BoardQuery<'_> {
+    sqlx::query_as::<_, Board>(
+        r#"
+            select board_id, name
+            from board
+            where $1 = name
+        "#,
+    )
+    .bind(board_name.clone())
 }
