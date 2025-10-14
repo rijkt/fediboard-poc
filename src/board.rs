@@ -35,7 +35,7 @@ async fn get_boards(db_pool: Extension<PgPool>) -> Json<Vec<Board>> {
 
 pub(crate) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
 
-pub(crate) fn fetch_board_by_name(board_name: &String) -> BoardQuery<'_> {
+pub(crate) fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
     sqlx::query_as::<_, Board>(
         r#"
             select board_id, name

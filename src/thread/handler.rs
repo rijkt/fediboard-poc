@@ -8,7 +8,7 @@ use sqlx::{
 use std::collections::HashMap;
 
 use crate::{
-    board::fetch_board_by_name,
+    board::board_by_name_query,
     thread::{Post, Posts, Thread},
 };
 
@@ -36,12 +36,21 @@ fn mock_thread() -> ThreadView {
 
 pub(super) async fn get_threads(
     Path(params): Path<HashMap<String, String>>,
+    db_pool: Extension<PgPool>,
 ) -> Json<Vec<ThreadView>> {
-    let _board_name: &String = params
+    let board_name: &String = params
         .get("board_name")
         .expect("board_name is required to get all threads");
-    let thread = mock_thread();
-    Json(vec![thread])
+    let board = board_by_name_query(board_name)
+        .fetch_one(&*db_pool)
+        .await
+        .expect("Failure fetching board {board_name}");
+    let threads = thread_query::build_by_board_id_query(board.board_id)
+        .fetch_all(&*db_pool) // TODO: paginate
+        .await
+        .expect("Error reading threads");
+    let views = threads.iter().map(|t| to_view(t)).collect();
+    Json(views)
 }
 
 pub(super) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<ThreadView> {
@@ -69,7 +78,7 @@ pub(super) async fn create_thread(
         .get("board_name")
         .expect("board_name is required to create a threads");
 
-    let board = fetch_board_by_name(board_name)
+    let board = board_by_name_query(board_name)
         .fetch_one(&*db_pool)
         .await
         .expect("Failure fetching board {board_name}");
@@ -91,10 +100,10 @@ pub(super) async fn create_thread(
         .await
         .expect("Error creating thread");
 
-    Json(to_view(created))
+    Json(to_view(&created))
 }
 
-fn to_view(thread: Thread) -> ThreadView {
+fn to_view(thread: &Thread) -> ThreadView {
     let posts: &Posts = &*thread.posts;
     ThreadView {
         thread_id: thread.thread_id.into(),

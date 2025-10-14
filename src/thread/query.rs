@@ -4,10 +4,10 @@ use sqlx::types::{Json, Uuid};
 
 use crate::thread::Thread;
 
-pub(super) type CreateThreadQuery =
+pub(super) type ThreadQuery =
     sqlx::query::QueryAs<'static, sqlx::Postgres, Thread, sqlx::postgres::PgArguments>; // TODO: does this need to have a static lifetime?
 
-pub(super) fn build_create_query(board_id: Uuid, post_ser: Json<Posts>) -> CreateThreadQuery {
+pub(super) fn build_create_query(board_id: Uuid, post_ser: Json<Posts>) -> ThreadQuery {
     sqlx::query_as::<_, Thread>(
         r#"
         insert into thread(board_id, posts)
@@ -17,4 +17,14 @@ pub(super) fn build_create_query(board_id: Uuid, post_ser: Json<Posts>) -> Creat
     )
     .bind(board_id)
     .bind(post_ser)
+}
+
+pub(super) fn build_by_board_id_query(board_id: Uuid) -> ThreadQuery {
+    sqlx::query_as::<_, Thread>(
+        r#"
+        select * from thread
+        where board_id = $1
+        "#,
+    )
+    .bind(board_id)
 }
