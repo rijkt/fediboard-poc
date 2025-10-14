@@ -1,3 +1,4 @@
+use crate::thread::query as thread_query;
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -85,18 +86,10 @@ pub(super) async fn create_thread(
         posts: vec![original_post],
     });
 
-    let created = sqlx::query_as::<_, Thread>(
-        r#"
-        insert into thread(board_id, posts)
-                values (uuid($1), $2)
-                returning thread_id, board_id, posts
-        "#,
-    )
-    .bind(board.board_id)
-    .bind(post_ser)
-    .fetch_one(&*db_pool)
-    .await
-    .expect("Error creating thread");
+    let created = thread_query::build_create_query(board.board_id, post_ser)
+        .fetch_one(&*db_pool)
+        .await
+        .expect("Error creating thread");
 
     Json(to_view(created))
 }

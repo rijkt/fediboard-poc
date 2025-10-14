@@ -1,4 +1,5 @@
 mod handler;
+mod query;
 
 use axum::{
     Router,
