@@ -16,6 +16,7 @@ pub(crate) fn routes() -> Router {
     Router::new()
         .route("/", get(get_boards))
         .nest("/{board_name}/threads", thread::routes())
+        // TODO: add handler for board by name
 }
 
 async fn get_boards(db_pool: Extension<PgPool>) -> Json<Vec<Board>> {
