@@ -58,7 +58,7 @@ pub(super) async fn get_thread(
         .fetch_one(&*db_pool)
         .await
         .expect("Error fetching thread ");
-    Json(to_view(&thread))
+    Json(to_view(&thread)) // TODO: validate with board_name before returning
 }
 
 #[derive(Serialize, Deserialize)]
