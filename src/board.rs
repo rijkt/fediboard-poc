@@ -53,7 +53,21 @@ fn all_boards_query() -> BoardQuery<'static> {
     )
 }
 
-pub(crate) fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
+pub(crate) async fn fetch_board_from_params(
+    params: HashMap<String, String>,
+    db_pool: &Extension<sqlx::Pool<sqlx::Postgres>>,
+) -> crate::board::Board {
+    let board_name: &String = params
+        .get("board_name")
+        .expect("board_name is required to get all threads");
+    let board = board_by_name_query(board_name)
+        .fetch_one(&**db_pool)
+        .await
+        .expect("Failure fetching board {board_name}");
+    board
+}
+
+fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
     sqlx::query_as::<_, Board>(
         r#"
             select board_id, name
