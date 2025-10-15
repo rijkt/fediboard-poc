@@ -28,3 +28,13 @@ pub(super) fn build_by_board_id_query(board_id: Uuid) -> ThreadQuery {
     )
     .bind(board_id)
 }
+
+pub(super) fn build_by_id_query(thread_id: Uuid) -> ThreadQuery {
+    sqlx::query_as::<_, Thread>(
+        r#"
+        select * from thread
+        where thread_id = $1
+        "#,
+    )
+    .bind(thread_id)
+}

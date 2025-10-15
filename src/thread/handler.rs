@@ -1,4 +1,4 @@
-use crate::thread::query as thread_query;
+use crate::thread::query::{self as thread_query, build_by_id_query};
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -24,16 +24,6 @@ pub(super) struct ThreadView {
     pub(crate) posts: PostsView,
 }
 
-fn mock_thread() -> ThreadView {
-    ThreadView {
-        thread_id: "1".to_string(),
-        board_id: "1".to_string(),
-        posts: PostsView {
-            posts: vec![mock_post()],
-        },
-    }
-}
-
 pub(super) async fn get_threads(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
@@ -53,12 +43,22 @@ pub(super) async fn get_threads(
     Json(views)
 }
 
-pub(super) async fn get_thread(Path(params): Path<HashMap<String, String>>) -> Json<ThreadView> {
+pub(super) async fn get_thread(
+    Path(params): Path<HashMap<String, String>>,
+    db_pool: Extension<PgPool>,
+) -> Json<ThreadView> {
     let _board_name = params
         .get("board_name")
-        .expect("board_name is required to get all threads");
-    let _thread_id = params.get("thread_id");
-    Json(mock_thread())
+        .expect("board_name is required to get a thread");
+    let thread_id_str = params
+        .get("thread_id")
+        .expect("thread_id is required to fetch by id");
+    let thread_id = Uuid::parse_str(&thread_id_str).expect("thread_id needs to be Uuid");
+    let thread = build_by_id_query(thread_id)
+        .fetch_one(&*db_pool)
+        .await
+        .expect("Error fetching thread ");
+    Json(to_view(&thread))
 }
 
 #[derive(Serialize, Deserialize)]
