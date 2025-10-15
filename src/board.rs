@@ -35,20 +35,23 @@ async fn get_board_by_name(
 }
 
 async fn get_boards(db_pool: Extension<PgPool>) -> Json<Vec<Board>> {
-    let boards = sqlx::query_as!(
-        Board,
-        r#"
-            select board_id, name
-            from board
-        "#
-    )
-    .fetch_all(&*db_pool)
-    .await
-    .expect("Failure fetching boards");
+    let boards = all_boards_query()
+        .fetch_all(&*db_pool)
+        .await
+        .expect("Failure fetching boards");
     Json(boards)
 }
 
 pub(crate) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
+
+fn all_boards_query() -> BoardQuery<'static> {
+    sqlx::query_as::<_, Board>(
+        r#"
+            select board_id, name
+            from board
+        "#,
+    )
+}
 
 pub(crate) fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
     sqlx::query_as::<_, Board>(
@@ -58,5 +61,5 @@ pub(crate) fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
             where $1 = name
         "#,
     )
-    .bind(board_name.clone())
+    .bind(board_name)
 }
