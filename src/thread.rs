@@ -1,17 +1,16 @@
 mod handler;
+mod query;
 
-use axum::{Router, routing::get, routing::post};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
+use sqlx::types::Json;
+use uuid::Uuid;
 
 use crate::thread::handler::{create_thread, get_post, get_posts, get_thread, get_threads};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct PostCreation {
-    pub(crate) name: String, // poster name
-    pub(crate) subject: String,
-    pub(crate) content: String,
-    pub(crate) media_url: String,
-}
 
 pub(crate) fn routes() -> Router {
     Router::new()
@@ -22,36 +21,22 @@ pub(crate) fn routes() -> Router {
         .route("/{thread_id}/posts/{post_id}", get(get_post))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Post {
-    pub(crate) id: String,   // OID?
-    pub(crate) name: String, // poster name
-    pub(crate) subject: String,
-    pub(crate) content: String,
-    pub(crate) media_url: String,
+    id: Uuid,
+    name: Option<String>, // poster name
+    subject: Option<String>,
+    content: Option<String>,
+    media_url: Option<String>,
+}
+#[derive(Serialize, Deserialize)]
+struct Posts {
+    posts: Vec<Post>,
 }
 
-fn mock_post() -> Post {
-    Post {
-        id: "1".to_string(),
-        name: "anon".to_string(),
-        subject: "test".to_string(),
-        content: "hello, world".to_string(),
-        media_url: "https://example.com/".to_string(),
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(FromRow)]
 struct Thread {
-    pub(crate) id: String, // OID?
-    pub(crate) board_id: String,
-    pub(crate) posts: Vec<Post>,
-}
-
-fn mock_thread() -> Thread {
-    Thread {
-        id: "1".to_string(),
-        board_id: "1".to_string(),
-        posts: vec![mock_post()],
-    }
+    pub(crate) thread_id: Uuid,
+    pub(crate) board_id: Uuid,
+    pub(crate) posts: Json<Posts>,
 }
