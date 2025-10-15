@@ -60,11 +60,10 @@ pub(crate) async fn fetch_board_from_params(
     let board_name: &String = params
         .get("board_name")
         .expect("board_name is required to get all threads");
-    let board = board_by_name_query(board_name)
+    board_by_name_query(board_name)
         .fetch_one(&**db_pool)
         .await
-        .expect("Failure fetching board {board_name}");
-    board
+        .expect("Failure fetching board {board_name}")
 }
 
 fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {

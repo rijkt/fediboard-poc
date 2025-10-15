@@ -121,12 +121,11 @@ async fn fetch_thread_from_params(
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
     let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
-    let thread = build_by_id_query(&thread_id)
+    // TODO: validate with board_name param
+    build_by_id_query(&thread_id)
         .fetch_one(&*db_pool)
         .await
-        .expect("Error fetching thread ");
-    // TODO: validate with board_name param
-    thread
+        .expect("Error fetching thread ")
 }
 
 fn to_thread_view(thread: &Thread) -> ThreadView {
