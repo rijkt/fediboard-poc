@@ -47,11 +47,8 @@ pub(super) async fn get_thread(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Json<ThreadView> {
-    let _board_name = params
-        .get("board_name")
-        .expect("board_name is required to get a thread");
     let thread = fetch_thread_from_params(params, db_pool).await;
-    Json(to_thread_view(&thread)) // TODO: validate with board_name before returning
+    Json(to_thread_view(&thread))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -89,11 +86,7 @@ pub(super) async fn get_posts(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Json<Vec<PostView>> {
-    let _board_name = params
-        .get("board_name")
-        .expect("board_name is required to get a thread");
     let thread = fetch_thread_from_params(params, db_pool).await;
-    // TODO: validate with board_name
     let posts = &*thread.posts;
     let post_views = posts.posts.iter().map(to_post_view).collect();
     Json(post_views)
@@ -103,15 +96,11 @@ pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Json<PostView> {
-    let _board_name = params
-        .get("board_name")
-        .expect("board_name is required to get a thread");
     let post_id_str = params
         .get("post_id")
         .expect("post_id is required to fetch by id");
     let post_id = Uuid::parse_str(post_id_str).expect("post_id needs to be Uuid");
     let thread = fetch_thread_from_params(params, db_pool).await;
-    // TODO: validate with board_name
     let posts = &*thread.posts;
     let post = posts
         .posts
@@ -125,6 +114,9 @@ async fn fetch_thread_from_params(
     params: HashMap<String, String>,
     db_pool: Extension<sqlx::Pool<sqlx::Postgres>>,
 ) -> Thread {
+    let _board_name = params
+        .get("board_name")
+        .expect("board_name is required to get a thread");
     let thread_id_str = params
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
@@ -133,6 +125,7 @@ async fn fetch_thread_from_params(
         .fetch_one(&*db_pool)
         .await
         .expect("Error fetching thread ");
+    // TODO: validate with board_name param
     thread
 }
 
