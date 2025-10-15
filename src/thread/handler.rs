@@ -52,7 +52,7 @@ pub(super) async fn get_thread(
     let thread_id_str = params
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
-    let thread_id = Uuid::parse_str(&thread_id_str).expect("thread_id needs to be Uuid");
+    let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
     let thread = build_by_id_query(thread_id)
         .fetch_one(&*db_pool)
         .await
@@ -121,7 +121,7 @@ pub(super) async fn get_posts(
     let thread_id_str = params
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
-    let thread_id = Uuid::parse_str(&thread_id_str).expect("thread_id needs to be Uuid");
+    let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
     let thread = build_by_id_query(thread_id)
         .fetch_one(&*db_pool)
         .await
@@ -142,11 +142,11 @@ pub(super) async fn get_post(
     let thread_id_str = params
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
-    let thread_id = Uuid::parse_str(&thread_id_str).expect("thread_id needs to be Uuid");
+    let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
     let post_id_str = params
         .get("post_id")
         .expect("post_id is required to fetch by id");
-    let post_id = Uuid::parse_str(&post_id_str).expect("post_id needs to be Uuid");
+    let post_id = Uuid::parse_str(post_id_str).expect("post_id needs to be Uuid");
 
     let thread = build_by_id_query(thread_id)
         .fetch_one(&*db_pool)
@@ -163,7 +163,7 @@ pub(super) async fn get_post(
 }
 
 fn to_thread_view(thread: &Thread) -> ThreadView {
-    let posts: &Posts = &*thread.posts;
+    let posts: &Posts = &thread.posts;
     let post_arr = &posts.posts;
     ThreadView {
         thread_id: thread.thread_id.into(),
