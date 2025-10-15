@@ -17,3 +17,5 @@ create table
         board_id uuid not null,
         posts jsonb not null
     );
+
+create index thread_board_id on "thread" (board_id);
