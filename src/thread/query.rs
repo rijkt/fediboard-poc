@@ -1,13 +1,14 @@
 use crate::thread::Posts;
-
-use sqlx::types::{Json, Uuid};
-
 use crate::thread::Thread;
+use sqlx::{
+    Postgres,
+    postgres::PgArguments,
+    types::{Json, Uuid},
+};
 
-pub(super) type ThreadQuery =
-    sqlx::query::QueryAs<'static, sqlx::Postgres, Thread, sqlx::postgres::PgArguments>; // TODO: does this need to have a static lifetime?
+pub(super) type ThreadQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Thread, PgArguments>;
 
-pub(super) fn build_create_query(board_id: Uuid, post_ser: Json<Posts>) -> ThreadQuery {
+pub(super) fn build_create_query<'q>(board_id: Uuid, post_ser: &'q Json<Posts>) -> ThreadQuery<'q> {
     sqlx::query_as::<_, Thread>(
         r#"
         insert into thread(board_id, posts)
@@ -19,7 +20,7 @@ pub(super) fn build_create_query(board_id: Uuid, post_ser: Json<Posts>) -> Threa
     .bind(post_ser)
 }
 
-pub(super) fn build_by_board_id_query(board_id: Uuid) -> ThreadQuery {
+pub(super) fn build_by_board_id_query(board_id: &Uuid) -> ThreadQuery<'_> {
     sqlx::query_as::<_, Thread>(
         r#"
         select * from thread
@@ -29,7 +30,7 @@ pub(super) fn build_by_board_id_query(board_id: Uuid) -> ThreadQuery {
     .bind(board_id)
 }
 
-pub(super) fn build_by_id_query(thread_id: Uuid) -> ThreadQuery {
+pub(super) fn build_by_id_query(thread_id: &Uuid) -> ThreadQuery<'_> {
     sqlx::query_as::<_, Thread>(
         r#"
         select * from thread

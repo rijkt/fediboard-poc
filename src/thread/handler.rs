@@ -35,7 +35,7 @@ pub(super) async fn get_threads(
     db_pool: Extension<PgPool>,
 ) -> Json<Vec<ThreadView>> {
     let board = fetch_board_from_params(params, &db_pool).await;
-    let threads = thread_query::build_by_board_id_query(board.board_id)
+    let threads = thread_query::build_by_board_id_query(&board.board_id)
         .fetch_all(&*db_pool) // TODO: paginate
         .await
         .expect("Error reading threads");
@@ -75,7 +75,7 @@ pub(super) async fn create_thread(
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
-    let created = thread_query::build_create_query(board.board_id, post_ser)
+    let created = thread_query::build_create_query(board.board_id, &post_ser)
         .fetch_one(&*db_pool)
         .await
         .expect("Error creating thread");
@@ -121,7 +121,7 @@ async fn fetch_thread_from_params(
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
     let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
-    let thread = build_by_id_query(thread_id)
+    let thread = build_by_id_query(&thread_id)
         .fetch_one(&*db_pool)
         .await
         .expect("Error fetching thread ");
