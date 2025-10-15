@@ -12,15 +12,24 @@ use sqlx::{
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct PostsView {
-    pub(crate) posts: Vec<PostView>,
+pub(super) struct ThreadView {
+    pub(super) thread_id: String,
+    pub(super) board_id: String,
+    pub(super) posts: PostsView,
 }
 
 #[derive(Serialize, Deserialize)]
-pub(super) struct ThreadView {
-    pub(crate) thread_id: String,
-    pub(crate) board_id: String,
-    pub(crate) posts: PostsView,
+pub(super) struct PostsView {
+    pub(super) posts: Vec<PostView>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct PostView {
+    pub(super) id: String,
+    pub(super) name: Option<String>, // poster name
+    pub(super) subject: Option<String>,
+    pub(super) content: Option<String>,
+    pub(super) media_url: Option<String>,
 }
 
 pub(super) async fn get_threads(
@@ -62,10 +71,10 @@ pub(super) async fn get_thread(
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PostCreation {
-    name: Option<String>, // poster name
-    subject: Option<String>,
-    content: Option<String>,
-    media_url: Option<String>,
+    pub(super) name: Option<String>, // poster name
+    pub(super) subject: Option<String>,
+    pub(super) content: Option<String>,
+    pub(super) media_url: Option<String>,
 }
 
 pub(super) async fn create_thread(
@@ -100,15 +109,6 @@ pub(super) async fn create_thread(
         .expect("Error creating thread");
 
     Json(to_thread_view(&created))
-}
-
-#[derive(Serialize, Deserialize)]
-pub(super) struct PostView {
-    id: String,
-    name: Option<String>, // poster name
-    subject: Option<String>,
-    content: Option<String>,
-    media_url: Option<String>,
 }
 
 pub(super) async fn get_posts(
@@ -174,12 +174,12 @@ fn to_thread_view(thread: &Thread) -> ThreadView {
     }
 }
 
-fn to_post_view(p: &Post) -> PostView {
+fn to_post_view(post: &Post) -> PostView {
     PostView {
-        id: p.id.to_string(),
-        name: p.name.clone(),
-        subject: p.subject.clone(),
-        content: p.content.clone(),
-        media_url: p.media_url.clone(),
+        id: post.id.to_string(),
+        name: post.name.clone(),
+        subject: post.subject.clone(),
+        content: post.content.clone(),
+        media_url: post.media_url.clone(),
     }
 }
