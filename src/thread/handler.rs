@@ -97,19 +97,15 @@ pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
-    match validate_post_params(&params) {
-        Ok((board_name, thread_id, post_id)) => {
-            let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await;
-            let posts = &*thread.posts;
-            let post = posts
-                .posts
-                .iter()
-                .find(|post| post.id == post_id)
-                .expect("thread_id must match"); // TODO: handle with 404
-            Ok(Json(to_post_view(post)))
-        }
-        Err(status) => Err(status),
-    }
+    let (board_name, thread_id, post_id) = validate_post_params(&params)?;
+    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await;
+    let posts = &*thread.posts;
+    let post = posts
+        .posts
+        .iter()
+        .find(|post| post.id == post_id)
+        .expect("thread_id must match"); // TODO: handle with 404
+    Ok(Json(to_post_view(post)))
 }
 
 async fn fetch_thread_from_params(
@@ -133,18 +129,9 @@ async fn fetch_thread_from_params(
 fn validate_post_params(
     params: &HashMap<String, String>,
 ) -> Result<(&str, Uuid, Uuid), StatusCode> {
-    let board_name = match validate_board_name(params) {
-        Ok(board_name) => board_name,
-        Err(status_code) => return Err(status_code),
-    };
-    let thread_id = match validate_thread_id(params) {
-        Ok(thread_id) => thread_id,
-        Err(status_code) => return Err(status_code),
-    };
-    let post_id = match validate_post_id(params) {
-        Ok(post_id) => post_id,
-        Err(status_code) => return Err(status_code),
-    };
+    let board_name: &str = validate_board_name(params)?;
+    let thread_id = validate_thread_id(params)?;
+    let post_id = validate_post_id(params)?;
     Ok((board_name, thread_id, post_id))
 }
 
@@ -155,7 +142,7 @@ fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCo
     };
     match Uuid::parse_str(thread_id_param) {
         Ok(parsed) => Ok(parsed),
-        Err(_) => return Err(StatusCode::NOT_FOUND),
+        Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
@@ -166,7 +153,7 @@ fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode
     };
     match Uuid::parse_str(post_id_param) {
         Ok(parsed) => Ok(parsed),
-        Err(_) => return Err(StatusCode::NOT_FOUND),
+        Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
