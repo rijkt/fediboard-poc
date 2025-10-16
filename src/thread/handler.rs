@@ -108,7 +108,9 @@ pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
-    let (board_name, thread_id, post_id) = validate_post_params(&params)?;
+    let board_name: &str = validate_board_name(&params)?;
+    let thread_id = validate_thread_id(&params)?;
+    let post_id = validate_post_id(&params)?;
     let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
     let posts = &thread.posts.posts;
     let matching_post = posts.iter().find(|post| post.id == post_id);
@@ -116,15 +118,6 @@ pub(super) async fn get_post(
         Some(post) => Ok(Json(to_post_view(post))),
         None => Err(StatusCode::NOT_FOUND),
     }
-}
-
-fn validate_post_params(
-    params: &HashMap<String, String>,
-) -> Result<(&str, Uuid, Uuid), StatusCode> {
-    let board_name: &str = validate_board_name(params)?;
-    let thread_id = validate_thread_id(params)?;
-    let post_id = validate_post_id(params)?;
-    Ok((board_name, thread_id, post_id))
 }
 
 fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
