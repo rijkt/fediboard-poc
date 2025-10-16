@@ -97,11 +97,9 @@ pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
-    let post_id_param = params.get("post_id");
-    match post_id_param {
-        Some(post_id_str) => {
-            let post_id = Uuid::parse_str(post_id_str).expect("post_id is required to fetch by id");
-            let thread = fetch_thread_from_params(params, db_pool).await;
+    match validate_post_params(&params) {
+        Ok((board_name, thread_id, post_id)) => {
+            let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await;
             let posts = &*thread.posts;
             let post = posts
                 .posts
@@ -110,7 +108,7 @@ pub(super) async fn get_post(
                 .expect("thread_id must match"); // TODO: handle with 404
             Ok(Json(to_post_view(post)))
         }
-        None => Err(StatusCode::BAD_REQUEST),
+        Err(status) => Err(status),
     }
 }
 
@@ -125,6 +123,44 @@ async fn fetch_thread_from_params(
         .get("thread_id")
         .expect("thread_id is required to fetch by id");
     let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
+    // TODO: validate with board_name param
+    build_by_id_query(&thread_id)
+        .fetch_one(&*db_pool)
+        .await
+        .expect("Error fetching thread ")
+}
+
+fn validate_post_params(
+    params: &HashMap<String, String>,
+) -> Result<(&str, Uuid, Uuid), StatusCode> {
+    let board_name: &String = match params.get("board_name") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    let post_id_param = match params.get("post_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    let post_id = match Uuid::parse_str(post_id_param) {
+        Ok(parsed) => parsed,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
+    let thread_id_param = match params.get("thread_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    let thread_id = match Uuid::parse_str(thread_id_param) {
+        Ok(parsed) => parsed,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
+    Ok((board_name, thread_id, post_id))
+}
+
+async fn fetch_thread_by_id(
+    thread_id: Uuid,
+    _board_name: &str,
+    db_pool: Extension<sqlx::Pool<sqlx::Postgres>>,
+) -> Thread {
     // TODO: validate with board_name param
     build_by_id_query(&thread_id)
         .fetch_one(&*db_pool)
