@@ -1,6 +1,7 @@
 use crate::board::fetch_board_from_params;
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Post, Posts, Thread};
+use axum::http::StatusCode;
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -95,19 +96,22 @@ pub(super) async fn get_posts(
 pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<PostView> {
-    let post_id_str = params
-        .get("post_id")
-        .expect("post_id is required to fetch by id");
-    let post_id = Uuid::parse_str(post_id_str).expect("post_id needs to be Uuid");
-    let thread = fetch_thread_from_params(params, db_pool).await;
-    let posts = &*thread.posts;
-    let post = posts
-        .posts
-        .iter()
-        .find(|post| post.id == post_id)
-        .expect("thread_id must match"); // TODO: handle with 404
-    Json(to_post_view(post))
+) -> Result<Json<PostView>, StatusCode> {
+    let post_id_param = params.get("post_id");
+    match post_id_param {
+        Some(post_id_str) => {
+            let post_id = Uuid::parse_str(post_id_str).expect("post_id is required to fetch by id");
+            let thread = fetch_thread_from_params(params, db_pool).await;
+            let posts = &*thread.posts;
+            let post = posts
+                .posts
+                .iter()
+                .find(|post| post.id == post_id)
+                .expect("thread_id must match"); // TODO: handle with 404
+            Ok(Json(to_post_view(post)))
+        }
+        None => Err(StatusCode::BAD_REQUEST),
+    }
 }
 
 async fn fetch_thread_from_params(
