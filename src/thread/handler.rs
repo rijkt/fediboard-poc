@@ -4,6 +4,7 @@ use crate::thread::{Post, Posts, Thread};
 use axum::http::StatusCode;
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
+use sqlx::Error;
 use sqlx::{
     PgPool,
     types::{Json as Sqlx_json, Uuid},
@@ -98,7 +99,7 @@ pub(super) async fn get_post(
     db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
     let (board_name, thread_id, post_id) = validate_post_params(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await;
+    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
     let posts = &thread.posts.posts;
     let matching_post = posts.iter().find(|post| post.id == post_id);
     match matching_post {
@@ -160,12 +161,15 @@ async fn fetch_thread_by_id(
     thread_id: Uuid,
     _board_name: &str,
     db_pool: Extension<sqlx::Pool<sqlx::Postgres>>,
-) -> Thread {
+) -> Result<Thread, StatusCode> {
     // TODO: validate with board_name param
-    build_by_id_query(&thread_id)
+    let fetch_result = build_by_id_query(&thread_id)
         .fetch_one(&*db_pool)
-        .await
-        .expect("Error fetching thread ")
+        .await;
+    match fetch_result {
+        Ok(thread) => Ok(thread),
+        Err(_) => Err(StatusCode::NOT_FOUND) // TODO: translate db-level error
+    }
 }
 
 fn to_thread_view(thread: &Thread) -> ThreadView {
