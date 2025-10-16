@@ -1,10 +1,9 @@
-use axum::{extract::Path, http::StatusCode, routing::get, Extension, Json, Router};
+use crate::thread;
+use axum::{Extension, Json, Router, extract::Path, http::StatusCode, routing::get};
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
 use std::collections::HashMap;
 use uuid::Uuid;
-
-use crate::thread;
 
 #[derive(FromRow, Serialize)]
 pub(crate) struct Board {
@@ -56,14 +55,13 @@ fn all_boards_query() -> BoardQuery<'static> {
 pub(crate) async fn fetch_board_from_params(
     params: HashMap<String, String>,
     db_pool: &Extension<sqlx::Pool<sqlx::Postgres>>,
-) -> crate::board::Board {
-    let board_name: &String = params
-        .get("board_name")
-        .expect("board_name is required to get all threads");
-    board_by_name_query(board_name)
-        .fetch_one(&**db_pool)
-        .await
-        .expect("Failure fetching board {board_name}")
+) -> Result<Board, StatusCode> {
+    let board_name = validate_board_name(&params)?;
+    let fetch_result = board_by_name_query(board_name).fetch_one(&**db_pool).await;
+    match fetch_result {
+        Ok(board) => Ok(board),
+        Err(_) => Err(StatusCode::NOT_FOUND), // TODO: return db-level error
+    }
 }
 
 pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
@@ -73,7 +71,7 @@ pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&s
     }
 }
 
-fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
+fn board_by_name_query(board_name: &str) -> BoardQuery<'_> {
     sqlx::query_as::<_, Board>(
         r#"
             select board_id, name
