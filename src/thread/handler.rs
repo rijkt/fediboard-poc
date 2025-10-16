@@ -34,16 +34,17 @@ pub(super) struct PostView {
 pub(super) async fn get_threads(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<Vec<ThreadView>> {
-    let board = fetch_board_from_params(params, &db_pool)
-        .await
-        .expect("expected board");
-    let threads = thread_query::build_by_board_id_query(&board.board_id)
+) -> Result<Json<Vec<ThreadView>>, StatusCode> {
+    let board = fetch_board_from_params(params, &db_pool).await?;
+    let fetch_result = thread_query::build_by_board_id_query(&board.board_id)
         .fetch_all(&*db_pool) // TODO: paginate
-        .await
-        .expect("Error reading threads");
+        .await;
+    let threads = match fetch_result {
+        Ok(threads) => threads,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
     let views = threads.iter().map(to_thread_view).collect();
-    Json(views)
+    Ok(Json(views))
 }
 
 pub(super) async fn get_thread(
@@ -68,10 +69,8 @@ pub(super) async fn create_thread(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
     Form(post_creation): Form<PostCreation>,
-) -> Json<ThreadView> {
-    let board = fetch_board_from_params(params, &db_pool)
-        .await
-        .expect("expect board");
+) -> Result<Json<ThreadView>, StatusCode> {
+    let board = fetch_board_from_params(params, &db_pool).await?;
     let original_post = Post {
         id: Uuid::new_v4(),
         name: post_creation.name,
@@ -82,11 +81,16 @@ pub(super) async fn create_thread(
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
-    let created = thread_query::build_create_query(board.board_id, &post_ser)
+    let create_result = thread_query::build_create_query(board.board_id, &post_ser)
         .fetch_one(&*db_pool)
-        .await
-        .expect("Error creating thread");
-    Json(to_thread_view(&created))
+        .await;
+    match create_result {
+        Ok(created) => {
+            let view = to_thread_view(&created);
+            Ok(Json(view))
+        }
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
 }
 
 pub(super) async fn get_posts(
