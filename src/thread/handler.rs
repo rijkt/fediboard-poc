@@ -1,6 +1,7 @@
-use crate::board::fetch_board_from_params;
+use crate::board::{fetch_board_from_params, validate_board_name};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Post, Posts, Thread};
+use axum::http::StatusCode;
 use axum::{Extension, Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -33,22 +34,27 @@ pub(super) struct PostView {
 pub(super) async fn get_threads(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<Vec<ThreadView>> {
-    let board = fetch_board_from_params(params, &db_pool).await;
-    let threads = thread_query::build_by_board_id_query(&board.board_id)
+) -> Result<Json<Vec<ThreadView>>, StatusCode> {
+    let board = fetch_board_from_params(params, &db_pool).await?;
+    let fetch_result = thread_query::build_by_board_id_query(&board.board_id)
         .fetch_all(&*db_pool) // TODO: paginate
-        .await
-        .expect("Error reading threads");
+        .await;
+    let threads = match fetch_result {
+        Ok(threads) => threads,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
     let views = threads.iter().map(to_thread_view).collect();
-    Json(views)
+    Ok(Json(views))
 }
 
 pub(super) async fn get_thread(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<ThreadView> {
-    let thread = fetch_thread_from_params(params, db_pool).await;
-    Json(to_thread_view(&thread))
+) -> Result<Json<ThreadView>, StatusCode> {
+    let board_name = validate_board_name(&params)?;
+    let thread_id = validate_thread_id(&params)?;
+    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    Ok(Json(to_thread_view(&thread)))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -63,8 +69,8 @@ pub(super) async fn create_thread(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
     Form(post_creation): Form<PostCreation>,
-) -> Json<ThreadView> {
-    let board = fetch_board_from_params(params, &db_pool).await;
+) -> Result<Json<ThreadView>, StatusCode> {
+    let board = fetch_board_from_params(params, &db_pool).await?;
     let original_post = Post {
         id: Uuid::new_v4(),
         name: post_creation.name,
@@ -75,57 +81,78 @@ pub(super) async fn create_thread(
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
-    let created = thread_query::build_create_query(board.board_id, &post_ser)
+    let create_result = thread_query::build_create_query(board.board_id, &post_ser)
         .fetch_one(&*db_pool)
-        .await
-        .expect("Error creating thread");
-    Json(to_thread_view(&created))
+        .await;
+    match create_result {
+        Ok(created) => {
+            let view = to_thread_view(&created);
+            Ok(Json(view))
+        }
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
 }
 
 pub(super) async fn get_posts(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<Vec<PostView>> {
-    let thread = fetch_thread_from_params(params, db_pool).await;
-    let posts = &*thread.posts;
-    let post_views = posts.posts.iter().map(to_post_view).collect();
-    Json(post_views)
+) -> Result<Json<Vec<PostView>>, StatusCode> {
+    let board_name = validate_board_name(&params)?;
+    let thread_id = validate_thread_id(&params)?;
+    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let post_views = thread.posts.posts.iter().map(to_post_view).collect();
+    Ok(Json(post_views))
 }
 
 pub(super) async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
-) -> Json<PostView> {
-    let post_id_str = params
-        .get("post_id")
-        .expect("post_id is required to fetch by id");
-    let post_id = Uuid::parse_str(post_id_str).expect("post_id needs to be Uuid");
-    let thread = fetch_thread_from_params(params, db_pool).await;
-    let posts = &*thread.posts;
-    let post = posts
-        .posts
-        .iter()
-        .find(|post| post.id == post_id)
-        .expect("thread_id must match"); // TODO: handle with 404
-    Json(to_post_view(post))
+) -> Result<Json<PostView>, StatusCode> {
+    let board_name: &str = validate_board_name(&params)?;
+    let thread_id = validate_thread_id(&params)?;
+    let post_id = validate_post_id(&params)?;
+    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let posts = &thread.posts.posts;
+    let matching_post = posts.iter().find(|post| post.id == post_id);
+    match matching_post {
+        Some(post) => Ok(Json(to_post_view(post))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
-async fn fetch_thread_from_params(
-    params: HashMap<String, String>,
+fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
+    let thread_id_param = match params.get("thread_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    match Uuid::parse_str(thread_id_param) {
+        Ok(parsed) => Ok(parsed),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
+    let post_id_param = match params.get("post_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    match Uuid::parse_str(post_id_param) {
+        Ok(parsed) => Ok(parsed),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+async fn fetch_thread_by_id(
+    thread_id: Uuid,
+    _board_name: &str,
     db_pool: Extension<sqlx::Pool<sqlx::Postgres>>,
-) -> Thread {
-    let _board_name = params
-        .get("board_name")
-        .expect("board_name is required to get a thread");
-    let thread_id_str = params
-        .get("thread_id")
-        .expect("thread_id is required to fetch by id");
-    let thread_id = Uuid::parse_str(thread_id_str).expect("thread_id needs to be Uuid");
+) -> Result<Thread, StatusCode> {
     // TODO: validate with board_name param
-    build_by_id_query(&thread_id)
-        .fetch_one(&*db_pool)
-        .await
-        .expect("Error fetching thread ")
+    let fetch_result = build_by_id_query(&thread_id).fetch_one(&*db_pool).await;
+    match fetch_result {
+        Ok(thread) => Ok(thread),
+        Err(_) => Err(StatusCode::NOT_FOUND), // TODO: translate db-level error
+    }
 }
 
 fn to_thread_view(thread: &Thread) -> ThreadView {

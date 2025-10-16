@@ -16,7 +16,7 @@ async fn main() {
         .max_connections(5)
         .connect(db_url.as_str())
         .await
-        .unwrap();
+        .expect("Could not connect to database");
 
     http::serve(db_pool, port).await
 }
