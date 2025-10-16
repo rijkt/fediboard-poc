@@ -99,13 +99,12 @@ pub(super) async fn get_post(
 ) -> Result<Json<PostView>, StatusCode> {
     let (board_name, thread_id, post_id) = validate_post_params(&params)?;
     let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await;
-    let posts = &*thread.posts;
-    let post = posts
-        .posts
-        .iter()
-        .find(|post| post.id == post_id)
-        .expect("thread_id must match"); // TODO: handle with 404
-    Ok(Json(to_post_view(post)))
+    let posts = &thread.posts.posts;
+    let matching_post = posts.iter().find(|post| post.id == post_id);
+    match matching_post {
+        Some(post) => Ok(Json(to_post_view(post))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 async fn fetch_thread_from_params(
