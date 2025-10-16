@@ -1,4 +1,4 @@
-use crate::board::fetch_board_from_params;
+use crate::board::{fetch_board_from_params, validate_board_name};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Post, Posts, Thread};
 use axum::http::StatusCode;
@@ -133,27 +133,41 @@ async fn fetch_thread_from_params(
 fn validate_post_params(
     params: &HashMap<String, String>,
 ) -> Result<(&str, Uuid, Uuid), StatusCode> {
-    let board_name: &String = match params.get("board_name") {
-        Some(param) => param,
-        None => return Err(StatusCode::BAD_REQUEST),
+    let board_name = match validate_board_name(params) {
+        Ok(board_name) => board_name,
+        Err(status_code) => return Err(status_code),
     };
-    let post_id_param = match params.get("post_id") {
-        Some(param) => param,
-        None => return Err(StatusCode::BAD_REQUEST),
+    let thread_id = match validate_thread_id(params) {
+        Ok(thread_id) => thread_id,
+        Err(status_code) => return Err(status_code),
     };
-    let post_id = match Uuid::parse_str(post_id_param) {
-        Ok(parsed) => parsed,
-        Err(_) => return Err(StatusCode::NOT_FOUND),
+    let post_id = match validate_post_id(params) {
+        Ok(post_id) => post_id,
+        Err(status_code) => return Err(status_code),
     };
+    Ok((board_name, thread_id, post_id))
+}
+
+fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
     let thread_id_param = match params.get("thread_id") {
         Some(param) => param,
         None => return Err(StatusCode::BAD_REQUEST),
     };
-    let thread_id = match Uuid::parse_str(thread_id_param) {
-        Ok(parsed) => parsed,
+    match Uuid::parse_str(thread_id_param) {
+        Ok(parsed) => Ok(parsed),
         Err(_) => return Err(StatusCode::NOT_FOUND),
+    }
+}
+
+fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
+    let post_id_param = match params.get("post_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
     };
-    Ok((board_name, thread_id, post_id))
+    match Uuid::parse_str(post_id_param) {
+        Ok(parsed) => Ok(parsed),
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    }
 }
 
 async fn fetch_thread_by_id(

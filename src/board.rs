@@ -1,4 +1,4 @@
-use axum::{Extension, Json, Router, extract::Path, routing::get};
+use axum::{extract::Path, http::StatusCode, routing::get, Extension, Json, Router};
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
 use std::collections::HashMap;
@@ -64,6 +64,13 @@ pub(crate) async fn fetch_board_from_params(
         .fetch_one(&**db_pool)
         .await
         .expect("Failure fetching board {board_name}")
+}
+
+pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
+    match params.get("board_name") {
+        Some(param) => Ok(param),
+        None => Err(StatusCode::BAD_REQUEST),
+    }
 }
 
 fn board_by_name_query(board_name: &String) -> BoardQuery<'_> {
