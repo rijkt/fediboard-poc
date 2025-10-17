@@ -1,6 +1,6 @@
 use crate::board::validate_board_name;
-use crate::thread::handler::fetch_thread_by_id;
-use crate::thread::handler::validate_thread_id;
+use crate::thread::thread_handler::fetch_thread_by_id;
+use crate::thread::thread_handler::validate_thread_id;
 use axum::Extension;
 use axum::Json;
 use axum::extract::Path;

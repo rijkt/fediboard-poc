@@ -1,4 +1,4 @@
-mod handler;
+mod thread_handler;
 mod post;
 mod query;
 
@@ -11,7 +11,7 @@ use sqlx::types::Json;
 use uuid::Uuid;
 
 use crate::thread::{
-    handler::{create_thread, get_thread, get_threads},
+    thread_handler::{create_thread, get_thread, get_threads},
     post::{Posts, get_post, get_posts},
 };
 
