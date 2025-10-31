@@ -7,6 +7,7 @@ use axum::Router;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::routing::get;
+use axum::routing::post;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -16,6 +17,7 @@ use uuid::Uuid;
 pub(super) fn routes() -> Router {
     Router::new()
         .route("/", get(get_posts))
+        .route("/", post(create_post))
         .route("/{post_id}", get(get_post))
 }
 
@@ -68,6 +70,16 @@ async fn get_post(
     }
 }
 
+async fn create_post(
+    Path(params): Path<HashMap<String, String>>,
+    db_pool: Extension<PgPool>,
+) -> Result<Json<PostView>, StatusCode> {
+    let board_name = validate_board_name(&params)?;
+    let thread_id = validate_thread_id(&params)?;
+    let _thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    // TODO: update thread
+    Err(StatusCode::INTERNAL_SERVER_ERROR)
+}
 pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
     let post_id_param = match params.get("post_id") {
         Some(param) => param,
