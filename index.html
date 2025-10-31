@@ -5,7 +5,8 @@
 
 <body>
     <form action="http://localhost:8080/api/threads" method="post" enctype="multipart/form-data">
-        <input type="text" name="name"> <label>
+        <input type="text" name="name">
+         <label>
             Upload file:
             <input type="file" name="file" multiple>
         </label>
@@ -15,11 +16,44 @@
 
 
     <form action="http://localhost:8080/api/boards/a/threads" method="post" enctype="application/x-www-form-urlencoded">
-        <input type="text" name="name">
-        <input type="text" name="subject">
-        <input type="text" name="media_url">
-        <textarea name="content"></textarea>
-        <input type="submit" value="Post">
+        <label>
+            Name
+            <input type="text" name="name">
+        </label>
+        <label>
+            Subject
+            <input type="text" name="subject">
+        </label>
+        <label>
+            Media url
+            <input type="text" name="media_url">
+        </label>
+        <label>
+            Comment
+            <textarea name="content"></textarea>
+        </label>
+        <input type="submit" value="Create Thread">
+    </form>
+
+
+        <form action="http://localhost:8080/api/boards/a/threads/..." method="post" enctype="application/x-www-form-urlencoded">
+        <label>
+            Name
+            <input type="text" name="name">
+        </label>
+        <label>
+            Subject
+            <input type="text" name="subject">
+        </label>
+        <label>
+            Media url
+            <input type="text" name="media_url">
+        </label>
+        <label>
+            Comment
+            <textarea name="content"></textarea>
+        </label>
+        <input type="submit" value="Post Comment">
     </form>
 </body>
 
