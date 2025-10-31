@@ -1,6 +1,6 @@
-mod thread_handler;
 mod post;
 mod query;
+mod thread_handler;
 
 use axum::{
     Router,
@@ -11,8 +11,8 @@ use sqlx::types::Json;
 use uuid::Uuid;
 
 use crate::thread::{
+    post::Posts,
     thread_handler::{create_thread, get_thread, get_threads},
-    post::{Posts, get_post, get_posts},
 };
 
 pub(crate) fn routes() -> Router {
@@ -20,8 +20,7 @@ pub(crate) fn routes() -> Router {
         .route("/", get(get_threads))
         .route("/", post(create_thread))
         .route("/{thread_id}", get(get_thread))
-        .route("/{thread_id}/posts", get(get_posts))
-        .route("/{thread_id}/posts/{post_id}", get(get_post))
+        .nest("/{thread_id}/posts", post::routes())
 }
 
 #[derive(FromRow)]

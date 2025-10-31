@@ -3,13 +3,21 @@ use crate::thread::thread_handler::fetch_thread_by_id;
 use crate::thread::thread_handler::validate_thread_id;
 use axum::Extension;
 use axum::Json;
+use axum::Router;
 use axum::extract::Path;
 use axum::http::StatusCode;
+use axum::routing::get;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::PgPool;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+pub(super) fn routes() -> Router {
+    Router::new()
+        .route("/", get(get_posts))
+        .route("/{post_id}", get(get_post))
+}
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct Post {
@@ -33,7 +41,7 @@ pub(super) struct PostCreation {
     pub(super) media_url: Option<String>,
 }
 
-pub(super) async fn get_posts(
+async fn get_posts(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Result<Json<Vec<PostView>>, StatusCode> {
@@ -44,7 +52,7 @@ pub(super) async fn get_posts(
     Ok(Json(post_views))
 }
 
-pub(super) async fn get_post(
+async fn get_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
