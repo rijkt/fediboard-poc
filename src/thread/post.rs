@@ -25,6 +25,14 @@ pub(super) struct Posts {
     pub(super) posts: Vec<Post>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub(super) struct PostCreation {
+    pub(super) name: Option<String>, // poster name
+    pub(super) subject: Option<String>,
+    pub(super) content: Option<String>,
+    pub(super) media_url: Option<String>,
+}
+
 pub(super) async fn get_posts(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,

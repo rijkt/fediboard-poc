@@ -1,5 +1,5 @@
 use crate::board::{fetch_board_from_params, validate_board_name};
-use crate::thread::post::{to_post_view, Post, PostsView};
+use crate::thread::post::{Post, PostCreation, PostsView, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Posts, Thread};
 use axum::http::StatusCode;
@@ -42,14 +42,6 @@ pub(super) async fn get_thread(
     let thread_id = validate_thread_id(&params)?;
     let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
     Ok(Json(to_thread_view(&thread)))
-}
-
-#[derive(Serialize, Deserialize)]
-pub(super) struct PostCreation {
-    pub(super) name: Option<String>, // poster name
-    pub(super) subject: Option<String>,
-    pub(super) content: Option<String>,
-    pub(super) media_url: Option<String>,
 }
 
 pub(super) async fn create_thread(
