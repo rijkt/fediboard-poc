@@ -82,22 +82,23 @@ async fn create_post(
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
     let new_post = form_to_post(post_creation);
-    let mut thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
-    let post_vec = &mut thread.posts.posts;
-    post_vec.push(new_post);
+    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let mut to_update = thread.posts.posts.clone();
+    to_update.push(new_post);
     let update = Posts {
-        posts: post_vec.to_vec()
+        posts: to_update.to_vec(),
     };
     let update_ser = Sqlx_json(update);
     let updated = match update_posts_query(&update_ser, &thread_id)
-            .fetch_one(&*db_pool)
-            .await {
+        .fetch_one(&*db_pool)
+        .await
+    {
         Ok(thread) => thread,
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
     let last_post: &Post = match (updated.posts).posts.last() {
         Some(post) => post,
-        None => return Err(StatusCode::INTERNAL_SERVER_ERROR)
+        None => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
     Ok(Json(to_post_view(last_post)))
 }
