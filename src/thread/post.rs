@@ -2,6 +2,7 @@ use crate::board::validate_board_name;
 use crate::thread::thread_handler::fetch_thread_by_id;
 use crate::thread::thread_handler::validate_thread_id;
 use axum::Extension;
+use axum::Form;
 use axum::Json;
 use axum::Router;
 use axum::extract::Path;
@@ -21,7 +22,7 @@ pub(super) fn routes() -> Router {
         .route("/{post_id}", get(get_post))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(super) struct Post {
     pub(super) id: Uuid,
     pub(super) name: Option<String>, // poster name
@@ -73,13 +74,20 @@ async fn get_post(
 async fn create_post(
     Path(params): Path<HashMap<String, String>>,
     db_pool: Extension<PgPool>,
+    Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<PostView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
-    let _thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let new_post = form_to_post(post_creation);
+    let mut thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let mut posts: Vec<Post> = thread.posts.posts.clone();
+    posts.push(new_post);
+    thread.posts.posts = posts;
+    
     // TODO: update thread
     Err(StatusCode::INTERNAL_SERVER_ERROR)
 }
+
 pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
     let post_id_param = match params.get("post_id") {
         Some(param) => param,
@@ -88,6 +96,16 @@ pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid,
     match Uuid::parse_str(post_id_param) {
         Ok(parsed) => Ok(parsed),
         Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+pub(super) fn form_to_post(post_creation: PostCreation) -> Post {
+    Post {
+        id: Uuid::new_v4(),
+        name: post_creation.name,
+        subject: post_creation.subject,
+        content: post_creation.content,
+        media_url: post_creation.media_url,
     }
 }
 

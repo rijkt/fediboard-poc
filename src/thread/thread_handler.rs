@@ -1,5 +1,5 @@
 use crate::board::{fetch_board_from_params, validate_board_name};
-use crate::thread::post::{Post, PostCreation, PostsView, to_post_view};
+use crate::thread::post::{Post, PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Posts, Thread};
 use axum::http::StatusCode;
@@ -50,13 +50,7 @@ pub(super) async fn create_thread(
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board = fetch_board_from_params(params, &db_pool).await?;
-    let original_post = Post {
-        id: Uuid::new_v4(),
-        name: post_creation.name,
-        subject: post_creation.subject,
-        content: post_creation.content,
-        media_url: post_creation.media_url,
-    };
+    let original_post = form_to_post(post_creation);
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
