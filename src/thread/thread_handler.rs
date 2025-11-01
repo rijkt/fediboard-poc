@@ -1,5 +1,5 @@
 use crate::board::{fetch_board_from_params, validate_board_name};
-use crate::thread::post::{Post, PostCreation, PostsView, to_post_view};
+use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Posts, Thread};
 use axum::http::StatusCode;
@@ -40,7 +40,7 @@ pub(super) async fn get_thread(
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
     Ok(Json(to_thread_view(&thread)))
 }
 
@@ -50,13 +50,7 @@ pub(super) async fn create_thread(
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board = fetch_board_from_params(params, &db_pool).await?;
-    let original_post = Post {
-        id: Uuid::new_v4(),
-        name: post_creation.name,
-        subject: post_creation.subject,
-        content: post_creation.content,
-        media_url: post_creation.media_url,
-    };
+    let original_post = form_to_post(post_creation);
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
@@ -86,10 +80,10 @@ pub(super) fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uui
 pub(super) async fn fetch_thread_by_id(
     thread_id: Uuid,
     _board_name: &str,
-    db_pool: Extension<sqlx::Pool<sqlx::Postgres>>,
+    db_pool: &Extension<sqlx::Pool<sqlx::Postgres>>,
 ) -> Result<Thread, StatusCode> {
     // TODO: validate with board_name param
-    let fetch_result = build_by_id_query(&thread_id).fetch_one(&*db_pool).await;
+    let fetch_result = build_by_id_query(&thread_id).fetch_one(&**db_pool).await;
     match fetch_result {
         Ok(thread) => Ok(thread),
         Err(_) => Err(StatusCode::NOT_FOUND), // TODO: translate db-level error
