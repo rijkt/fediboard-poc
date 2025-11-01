@@ -95,7 +95,7 @@ async fn create_post(
         Ok(thread) => thread,
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
-    let last_post: &Post = match (*updated.posts).posts.last() {
+    let last_post: &Post = match (updated.posts).posts.last() {
         Some(post) => post,
         None => return Err(StatusCode::INTERNAL_SERVER_ERROR)
     };
