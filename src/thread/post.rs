@@ -1,4 +1,5 @@
 use crate::board::validate_board_name;
+use crate::thread::query::update_posts_query;
 use crate::thread::thread_handler::fetch_thread_by_id;
 use crate::thread::thread_handler::validate_thread_id;
 use axum::Extension;
@@ -11,9 +12,11 @@ use axum::routing::get;
 use axum::routing::post;
 use serde::Deserialize;
 use serde::Serialize;
-use sqlx::PgPool;
+use sqlx::{
+    PgPool,
+    types::{Json as Sqlx_json, Uuid},
+};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 pub(super) fn routes() -> Router {
     Router::new()
@@ -50,7 +53,7 @@ async fn get_posts(
 ) -> Result<Json<Vec<PostView>>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
     let post_views = thread.posts.posts.iter().map(to_post_view).collect();
     Ok(Json(post_views))
 }
@@ -62,7 +65,7 @@ async fn get_post(
     let board_name: &str = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
     let post_id = validate_post_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
     let posts = &thread.posts.posts;
     let matching_post = posts.iter().find(|post| post.id == post_id);
     match matching_post {
@@ -79,13 +82,24 @@ async fn create_post(
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
     let new_post = form_to_post(post_creation);
-    let mut thread = fetch_thread_by_id(thread_id, board_name, db_pool).await?;
-    let mut posts: Vec<Post> = thread.posts.posts.clone();
-    posts.push(new_post);
-    thread.posts.posts = posts;
-    
-    // TODO: update thread
-    Err(StatusCode::INTERNAL_SERVER_ERROR)
+    let mut thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let post_vec = &mut thread.posts.posts;
+    post_vec.push(new_post);
+    let update = Posts {
+        posts: post_vec.to_vec()
+    };
+    let update_ser = Sqlx_json(update);
+    let updated = match update_posts_query(&update_ser, &thread_id)
+            .fetch_one(&*db_pool)
+            .await {
+        Ok(thread) => thread,
+        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+    };
+    let last_post: &Post = match (*updated.posts).posts.last() {
+        Some(post) => post,
+        None => return Err(StatusCode::INTERNAL_SERVER_ERROR)
+    };
+    Ok(Json(to_post_view(last_post)))
 }
 
 pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
