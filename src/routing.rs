@@ -5,6 +5,7 @@ use crate::{
 use axum::{Extension, Json, Router, routing::get};
 use sqlx::{Pool, Postgres};
 use utoipa::OpenApi;
+use utoipauto::utoipauto;
 
 pub(crate) fn build_routes(db_pool: Pool<Postgres>) -> Router {
     let api_routes = Router::new()
@@ -23,8 +24,9 @@ async fn hello_handler() -> String {
     "Hello from the fediboard api".to_string()
 }
 
+#[utoipauto]
 #[derive(OpenApi)]
-#[openapi(paths(openapi))]
+#[openapi()]
 struct ApiDoc;
 
 #[utoipa::path(
