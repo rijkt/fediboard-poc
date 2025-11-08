@@ -15,11 +15,29 @@ pub(crate) fn build_routes(db_pool: Pool<Postgres>) -> Router {
         .route("/openapi.json", get(openapi));
 
     Router::new()
-        .route("/", get(async || "Hello from the fediboard".to_string()))
+        .route("/", get(root_handler))
         .nest("/api", api_routes)
         .layer(Extension(db_pool))
 }
 
+#[utoipa::path(
+    get,
+    path = "/",
+    responses(
+        (status = 200, body = str, content_type = "text/plain")
+    )
+)]
+async fn root_handler() -> String {
+    "Hello from fediboard".to_string()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api",
+    responses(
+        (status = 200, body = str, content_type = "text/plain")    
+    )
+)]
 async fn hello_handler() -> String {
     "Hello from the fediboard api".to_string()
 }
@@ -33,7 +51,7 @@ struct ApiDoc;
     get,
     path = "/api/openapi.json",
     responses(
-        (status = 200, description = "JSON file", body = ())
+        (status = 200, description = "JSON file", body = (), content_type = "application/json")
     )
 )]
 async fn openapi() -> Json<utoipa::openapi::OpenApi> {
