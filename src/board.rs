@@ -19,11 +19,12 @@ pub(crate) struct Board {
 
 pub trait BoardUseCase {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
+    async fn get_all_boards(&self) -> Result<Vec<Board>, sqlx::Error>;
 }
 
 #[derive(Clone)]
 pub struct BoardUseCaseImpl {
-    pub db_pool: PgPool
+    pub db_pool: PgPool,
 }
 
 impl BoardUseCase for BoardUseCaseImpl {
@@ -31,6 +32,10 @@ impl BoardUseCase for BoardUseCaseImpl {
         board_by_name_query(board_name)
             .fetch_one(&self.db_pool)
             .await
+    }
+
+    async fn get_all_boards(&self) -> Result<Vec<Board>, sqlx::Error> {
+        all_boards_query().fetch_all(&self.db_pool).await
     }
 }
 
@@ -42,7 +47,6 @@ pub(crate) fn routes(app_state: AppState) -> Router {
         .nest("/{board_name}/threads", thread::routes(app_state))
 }
 
-#[axum::debug_handler]
 async fn get_board_by_name(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
@@ -57,11 +61,11 @@ async fn get_board_by_name(
     }
 }
 
-#[axum::debug_handler]
 async fn get_boards(State(state): State<AppState>) -> Result<Json<Vec<Board>>, StatusCode> {
-    let fetch_result = all_boards_query().fetch_all(&state.db_pool).await;
-
-    match fetch_result {
+    let use_case = BoardUseCaseImpl {
+        db_pool: state.db_pool,
+    };
+    match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards)),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
