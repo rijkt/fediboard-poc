@@ -1,14 +1,14 @@
 use crate::{
-    board::{self},
+    board::{self, AppState},
     file::{self},
 };
 use axum::{Extension, Router, routing::get};
 use sqlx::{Pool, Postgres};
 
-pub(crate) fn build_routes(db_pool: Pool<Postgres>) -> Router {
+pub(crate) fn build_routes(db_pool: Pool<Postgres>, app_state: AppState) -> Router {
     let api_routes = Router::new()
         .route("/", get(hello_handler))
-        .nest("/boards", board::routes())
+        .nest("/boards", board::routes(app_state))
         .nest("/files", file::routes());
     Router::new()
         .route("/", get(async || "Hello from the fediboard".to_string()))

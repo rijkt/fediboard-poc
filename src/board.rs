@@ -12,12 +12,18 @@ pub(crate) struct Board {
     // pub(crate) tagline: Option<String>,
 }
 
+
+#[derive(Clone)]
+pub struct AppState<'db>{
+    pub board_use_case: BoardUseCaseImpl<'db>
+}
 pub trait BoardUseCase {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
 }
 
-struct BoardUseCaseImpl<'db> {
-    db_pool: &'db PgPool,
+#[derive(Clone)]
+pub struct BoardUseCaseImpl<'db> {
+    pub db_pool: &'db PgPool,
 }
 
 impl <'db> BoardUseCase for BoardUseCaseImpl<'db> {
@@ -28,10 +34,11 @@ impl <'db> BoardUseCase for BoardUseCaseImpl<'db> {
     }
 }
 
-pub(crate) fn routes() -> Router {
+pub(crate) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_boards))
         .route("/{board_name}", get(get_board_by_name))
+        .with_state(app_state)
         .nest("/{board_name}/threads", thread::routes())
 }
 
@@ -47,7 +54,7 @@ async fn get_board_by_name(
     }
 }
 
-async fn get_boards(db_pool: Extension<PgPool>) -> Result<Json<Vec<Board>>, StatusCode> {
+async fn get_boards(state: AppState) -> Result<Json<Vec<Board>>, StatusCode> {
     let fetch_result = all_boards_query().fetch_all(&*db_pool).await;
     match fetch_result {
         Ok(boards) => Ok(Json(boards)),
