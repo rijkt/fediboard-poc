@@ -12,6 +12,22 @@ pub(crate) struct Board {
     // pub(crate) tagline: Option<String>,
 }
 
+pub trait BoardUseCase {
+    async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
+}
+
+struct BoardUseCaseImpl<'db> {
+    db_pool: &'db PgPool,
+}
+
+impl <'db> BoardUseCase for BoardUseCaseImpl<'db> {
+    async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error> {
+        board_by_name_query(board_name)
+            .fetch_one(&*self.db_pool)
+            .await
+    }
+}
+
 pub(crate) fn routes() -> Router {
     Router::new()
         .route("/", get(get_boards))
@@ -24,8 +40,8 @@ async fn get_board_by_name(
     db_pool: Extension<PgPool>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let fetch_result = board_by_name_query(board_name).fetch_one(&*db_pool).await;
-    match fetch_result {
+    let use_case = BoardUseCaseImpl{db_pool: &db_pool};
+    match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
