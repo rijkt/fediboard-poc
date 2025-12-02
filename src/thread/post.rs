@@ -1,28 +1,27 @@
 use crate::board::validate_board_name;
+use crate::http::AppState;
 use crate::thread::query::update_posts_query;
 use crate::thread::thread_handler::fetch_thread_by_id;
 use crate::thread::thread_handler::validate_thread_id;
-use axum::Extension;
 use axum::Form;
 use axum::Json;
 use axum::Router;
 use axum::extract::Path;
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::routing::post;
 use serde::Deserialize;
 use serde::Serialize;
-use sqlx::{
-    PgPool,
-    types::{Json as Sqlx_json, Uuid},
-};
+use sqlx::types::{Json as Sqlx_json, Uuid};
 use std::collections::HashMap;
 
-pub(super) fn routes() -> Router {
+pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_posts))
         .route("/", post(create_post))
         .route("/{post_id}", get(get_post))
+        .with_state(app_state)
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -48,24 +47,24 @@ pub(super) struct PostCreation {
 }
 
 async fn get_posts(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
 ) -> Result<Json<Vec<PostView>>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
     let post_views = thread.posts.posts.iter().map(to_post_view).collect();
     Ok(Json(post_views))
 }
 
 async fn get_post(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
 ) -> Result<Json<PostView>, StatusCode> {
     let board_name: &str = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
     let post_id = validate_post_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
     let posts = &thread.posts.posts;
     let matching_post = posts.iter().find(|post| post.id == post_id);
     match matching_post {
@@ -75,14 +74,14 @@ async fn get_post(
 }
 
 async fn create_post(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<PostView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
     let new_post = form_to_post(post_creation);
-    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
     let mut to_update = thread.posts.posts.clone();
     to_update.push(new_post);
     let update = Posts {
@@ -90,7 +89,7 @@ async fn create_post(
     };
     let update_ser = Sqlx_json(update);
     let updated = match update_posts_query(&update_ser, &thread_id)
-        .fetch_one(&*db_pool)
+        .fetch_one(&app_state.db_pool)
         .await
     {
         Ok(thread) => thread,

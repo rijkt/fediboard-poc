@@ -1,5 +1,10 @@
 use crate::{http::AppState, thread};
-use axum::{Extension, Json, Router, extract::{Path, State}, http::StatusCode, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    http::StatusCode,
+    routing::get,
+};
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
 use std::collections::HashMap;
@@ -12,7 +17,6 @@ pub(crate) struct Board {
     // pub(crate) tagline: Option<String>,
 }
 
-
 pub trait BoardUseCase {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
 }
@@ -22,7 +26,7 @@ pub struct BoardUseCaseImpl<'db> {
     pub db_pool: &'db PgPool,
 }
 
-impl <'db> BoardUseCase for BoardUseCaseImpl<'db> {
+impl<'db> BoardUseCase for BoardUseCaseImpl<'db> {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error> {
         board_by_name_query(board_name)
             .fetch_one(&*self.db_pool)
@@ -34,8 +38,8 @@ pub(crate) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_boards))
         .route("/{board_name}", get(get_board_by_name))
-        .with_state(app_state)
-        .nest("/{board_name}/threads", thread::routes())
+        .with_state(app_state.clone())
+        .nest("/{board_name}/threads", thread::routes(app_state))
 }
 
 #[axum::debug_handler]
@@ -44,7 +48,9 @@ async fn get_board_by_name(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let use_case = BoardUseCaseImpl{db_pool: &app_state.db_pool};
+    let use_case = BoardUseCaseImpl {
+        db_pool: &app_state.db_pool,
+    };
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
         Err(_) => Err(StatusCode::NOT_FOUND),
@@ -63,10 +69,10 @@ async fn get_boards(State(state): State<AppState>) -> Result<Json<Vec<Board>>, S
 
 pub(crate) async fn fetch_board_from_params(
     params: HashMap<String, String>,
-    db_pool: &Extension<sqlx::Pool<sqlx::Postgres>>,
+    db_pool: &PgPool,
 ) -> Result<Board, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let fetch_result = board_by_name_query(board_name).fetch_one(&**db_pool).await;
+    let fetch_result = board_by_name_query(board_name).fetch_one(db_pool).await;
     match fetch_result {
         Ok(board) => Ok(board),
         Err(_) => Err(StatusCode::NOT_FOUND), // TODO: return db-level error

@@ -1,9 +1,11 @@
 use crate::board::{fetch_board_from_params, validate_board_name};
+use crate::http::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Posts, Thread};
+use axum::extract::State;
 use axum::http::StatusCode;
-use axum::{Extension, Form, Json, extract::Path};
+use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     PgPool,
@@ -19,12 +21,12 @@ pub(super) struct ThreadView {
 }
 
 pub(super) async fn get_threads(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
 ) -> Result<Json<Vec<ThreadView>>, StatusCode> {
-    let board = fetch_board_from_params(params, &db_pool).await?;
+    let board = fetch_board_from_params(params, &app_state.db_pool).await?;
     let fetch_result = thread_query::build_by_board_id_query(&board.board_id)
-        .fetch_all(&*db_pool) // TODO: paginate
+        .fetch_all(&app_state.db_pool) // TODO: paginate
         .await;
     let threads = match fetch_result {
         Ok(threads) => threads,
@@ -35,27 +37,27 @@ pub(super) async fn get_threads(
 }
 
 pub(super) async fn get_thread(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &db_pool).await?;
+    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
     Ok(Json(to_thread_view(&thread)))
 }
 
 pub(super) async fn create_thread(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<ThreadView>, StatusCode> {
-    let board = fetch_board_from_params(params, &db_pool).await?;
+    let board = fetch_board_from_params(params, &app_state.db_pool).await?;
     let original_post = form_to_post(post_creation);
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
     });
     let create_result = thread_query::build_create_query(board.board_id, &post_ser)
-        .fetch_one(&*db_pool)
+        .fetch_one(&app_state.db_pool)
         .await;
     match create_result {
         Ok(created) => {
@@ -80,10 +82,10 @@ pub(super) fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uui
 pub(super) async fn fetch_thread_by_id(
     thread_id: Uuid,
     _board_name: &str,
-    db_pool: &Extension<sqlx::Pool<sqlx::Postgres>>,
+    db_pool: &PgPool,
 ) -> Result<Thread, StatusCode> {
     // TODO: validate with board_name param
-    let fetch_result = build_by_id_query(&thread_id).fetch_one(&**db_pool).await;
+    let fetch_result = build_by_id_query(&thread_id).fetch_one(db_pool).await;
     match fetch_result {
         Ok(thread) => Ok(thread),
         Err(_) => Err(StatusCode::NOT_FOUND), // TODO: translate db-level error

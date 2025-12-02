@@ -10,17 +10,18 @@ use sqlx::prelude::FromRow;
 use sqlx::types::Json;
 use uuid::Uuid;
 
-use crate::thread::{
+use crate::{http::AppState, thread::{
     post::Posts,
     thread_handler::{create_thread, get_thread, get_threads},
-};
+}};
 
-pub(crate) fn routes() -> Router {
+pub(crate) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_threads))
         .route("/", post(create_thread))
         .route("/{thread_id}", get(get_thread))
-        .nest("/{thread_id}/posts", post::routes())
+        .with_state(app_state.clone())
+        .nest("/{thread_id}/posts", post::routes(app_state))
 }
 
 #[derive(FromRow)]
