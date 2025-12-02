@@ -1,11 +1,25 @@
+use axum::extract::FromRef;
 use sqlx::PgPool;
 
-use crate::routing;
+use crate::{board::BoardUseCaseImpl, routing};
 
 
 #[derive(Clone)]
 pub struct AppState{
      pub db_pool: PgPool,
+     pub board_state: BoardState
+     
+}
+
+#[derive(Clone)]
+pub struct BoardState {
+    pub board_use_case: BoardUseCaseImpl
+}
+
+impl FromRef<AppState> for BoardState {
+    fn from_ref(app_state: &AppState) -> BoardState {
+        app_state.board_state.clone()
+    }
 }
 
 pub(crate) async fn serve<'db>(port: String, app_state: AppState) -> () {

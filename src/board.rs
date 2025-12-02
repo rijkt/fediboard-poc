@@ -1,4 +1,4 @@
-use crate::{http::AppState, thread};
+use crate::{http::{AppState, BoardState}, thread};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -48,23 +48,19 @@ pub(crate) fn routes(app_state: AppState) -> Router {
 }
 
 async fn get_board_by_name(
-    State(app_state): State<AppState>,
+    State(state): State<BoardState>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let use_case = BoardUseCaseImpl {
-        db_pool: app_state.db_pool,
-    };
+    let use_case = state.board_use_case;
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
-async fn get_boards(State(state): State<AppState>) -> Result<Json<Vec<Board>>, StatusCode> {
-    let use_case = BoardUseCaseImpl {
-        db_pool: state.db_pool,
-    };
+async fn get_boards(State(state): State<BoardState>) -> Result<Json<Vec<Board>>, StatusCode> {
+    let use_case: BoardUseCaseImpl = state.board_use_case;
     match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards)),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
