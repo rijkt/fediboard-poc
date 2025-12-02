@@ -22,14 +22,14 @@ pub trait BoardUseCase {
 }
 
 #[derive(Clone)]
-pub struct BoardUseCaseImpl<'db> {
-    pub db_pool: &'db PgPool,
+pub struct BoardUseCaseImpl {
+    pub db_pool: PgPool
 }
 
-impl<'db> BoardUseCase for BoardUseCaseImpl<'db> {
+impl BoardUseCase for BoardUseCaseImpl {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error> {
         board_by_name_query(board_name)
-            .fetch_one(&*self.db_pool)
+            .fetch_one(&self.db_pool)
             .await
     }
 }
@@ -49,7 +49,7 @@ async fn get_board_by_name(
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let use_case = BoardUseCaseImpl {
-        db_pool: &app_state.db_pool,
+        db_pool: app_state.db_pool,
     };
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
