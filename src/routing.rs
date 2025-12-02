@@ -1,11 +1,10 @@
 use crate::{
-    board::{self, AppState},
-    file::{self},
+    board::{self},
+    file::{self}, http::AppState,
 };
-use axum::{Extension, Router, routing::get};
-use sqlx::{Pool, Postgres};
+use axum::{Router, routing::get};
 
-pub(crate) fn build_routes(db_pool: Pool<Postgres>, app_state: AppState) -> Router {
+pub(crate) fn build_routes(app_state: AppState) -> Router {
     let api_routes = Router::new()
         .route("/", get(hello_handler))
         .nest("/boards", board::routes(app_state))
@@ -13,7 +12,7 @@ pub(crate) fn build_routes(db_pool: Pool<Postgres>, app_state: AppState) -> Rout
     Router::new()
         .route("/", get(async || "Hello from the fediboard".to_string()))
         .nest("/api", api_routes)
-        .layer(Extension(db_pool))
+        
 }
 
 async fn hello_handler() -> String {

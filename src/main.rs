@@ -1,6 +1,6 @@
 use sqlx::postgres::PgPoolOptions;
 
-use crate::board::{AppState, BoardUseCaseImpl};
+use crate::http::AppState;
 
 mod board;
 mod file;
@@ -20,7 +20,6 @@ async fn main() {
         .await
         .expect("Could not connect to database");
 
-    let app_state = AppState{board_use_case: BoardUseCaseImpl{db_pool: &db_pool} };
-
+    let app_state = AppState{db_pool: db_pool };
     http::serve(port, app_state).await
 }

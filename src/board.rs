@@ -1,5 +1,5 @@
-use crate::thread;
-use axum::{Extension, Json, Router, extract::Path, http::StatusCode, routing::get};
+use crate::{http::AppState, thread};
+use axum::{Extension, Json, Router, extract::{Path, State}, http::StatusCode, routing::get};
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
 use std::collections::HashMap;
@@ -13,10 +13,6 @@ pub(crate) struct Board {
 }
 
 
-#[derive(Clone)]
-pub struct AppState<'db>{
-    pub board_use_case: BoardUseCaseImpl<'db>
-}
 pub trait BoardUseCase {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
 }
@@ -42,20 +38,23 @@ pub(crate) fn routes(app_state: AppState) -> Router {
         .nest("/{board_name}/threads", thread::routes())
 }
 
+#[axum::debug_handler]
 async fn get_board_by_name(
+    State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
-    db_pool: Extension<PgPool>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let use_case = BoardUseCaseImpl{db_pool: &db_pool};
+    let use_case = BoardUseCaseImpl{db_pool: &app_state.db_pool};
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
-async fn get_boards(state: AppState) -> Result<Json<Vec<Board>>, StatusCode> {
-    let fetch_result = all_boards_query().fetch_all(&*db_pool).await;
+#[axum::debug_handler]
+async fn get_boards(State(state): State<AppState>) -> Result<Json<Vec<Board>>, StatusCode> {
+    let fetch_result = all_boards_query().fetch_all(&state.db_pool).await;
+
     match fetch_result {
         Ok(boards) => Ok(Json(boards)),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),

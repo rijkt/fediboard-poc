@@ -1,9 +1,15 @@
-use sqlx::{Pool, Postgres};
+use sqlx::PgPool;
 
-use crate::{board::{AppState}, routing};
+use crate::routing;
 
-pub(crate) async fn serve<'db>(port: String, app_state: AppState<'db>) -> () {
-    let app_routes = routing::build_routes(db_pool, app_state);
+
+#[derive(Clone)]
+pub struct AppState{
+     pub db_pool: PgPool,
+}
+
+pub(crate) async fn serve<'db>(port: String, app_state: AppState) -> () {
+    let app_routes = routing::build_routes(app_state);
     let addr = format!("0.0.0.0:{}", port);
     println!("Serving at http://{}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
