@@ -19,8 +19,16 @@ pub trait DepenencyInjector {
 
 #[derive(Clone, FromRef)]
 pub struct DepenencyInjectorImpl {
-    db_pool: PgPool
+    pub db_pool: PgPool
 }
+
+
+impl FromRef<AppState> for DepenencyInjectorImpl {
+    fn from_ref(app_state: &AppState) -> DepenencyInjectorImpl {
+        app_state.di.clone()
+    }
+}
+
 
 impl DepenencyInjector for DepenencyInjectorImpl {
     fn board_use_case(&self) -> impl BoardUseCase {
