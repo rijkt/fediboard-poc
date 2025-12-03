@@ -18,8 +18,8 @@ pub(crate) struct Board {
 }
 
 pub trait BoardUseCase {
-    async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error>;
-    async fn get_all_boards(&self) -> Result<Vec<Board>, sqlx::Error>;
+    fn get_board_by_name(&self, board_name: &str) -> impl std::future::Future<Output = Result<Board, sqlx::Error>> + Send;
+    fn get_all_boards(&self) -> impl std::future::Future<Output = Result<Vec<Board>, sqlx::Error>> + Send;
 }
 
 #[derive(Clone)]
