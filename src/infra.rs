@@ -4,7 +4,7 @@ use axum::extract::FromRef;
 
 use sqlx::PgPool;
 
-use crate::board::BoardUseCaseImpl;
+use crate::board::{BoardUseCase, BoardUseCaseImpl};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -23,6 +23,27 @@ impl FromRef<AppState> for BoardState {
         app_state.board_state.clone()
     }
 }
+
+pub trait DepenencyInjector {
+    
+    fn board_use_case(&self) -> impl BoardUseCase;
+    
+}
+
+#[derive(Clone, FromRef)]
+pub struct DepenencyInjectorImpl {
+    db_pool: PgPool
+}
+
+impl DepenencyInjector for DepenencyInjectorImpl {
+    fn board_use_case(&self) -> impl BoardUseCase {
+        BoardUseCaseImpl{
+            db_pool: self.db_pool.clone()
+        }
+    }
+}
+
+
 
 pub async fn create_app_state() -> AppState {
     let db_url =
