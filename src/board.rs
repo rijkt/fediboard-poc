@@ -1,4 +1,4 @@
-use crate::{infra::{AppState, BoardState}, thread};
+use crate::{infra::{AppState, DepenencyInjector, DepenencyInjectorImpl}, thread};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -47,20 +47,22 @@ pub(crate) fn routes(app_state: AppState) -> Router {
         .nest("/{board_name}/threads", thread::routes(app_state))
 }
 
+#[axum::debug_handler]
 async fn get_board_by_name(
-    State(state): State<BoardState>,
+    State(di): State<DepenencyInjectorImpl>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let use_case = state.board_use_case;
+    let use_case = di.board_use_case();
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(board)),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
-async fn get_boards(State(state): State<BoardState>) -> Result<Json<Vec<Board>>, StatusCode> {
-    let use_case: BoardUseCaseImpl = state.board_use_case;
+#[axum::debug_handler]
+async fn get_boards(State(di): State<DepenencyInjectorImpl>) -> Result<Json<Vec<Board>>, StatusCode> {
+    let use_case = di.board_use_case();
     match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards)),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),

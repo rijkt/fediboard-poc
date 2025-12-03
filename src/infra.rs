@@ -10,24 +10,11 @@ use crate::board::{BoardUseCase, BoardUseCaseImpl};
 pub struct AppState {
     pub port: String,
     pub db_pool: PgPool,
-    pub board_state: BoardState,
-}
-
-#[derive(Clone)]
-pub struct BoardState {
-    pub board_use_case: BoardUseCaseImpl,
-}
-
-impl FromRef<AppState> for BoardState {
-    fn from_ref(app_state: &AppState) -> BoardState {
-        app_state.board_state.clone()
-    }
+    pub di: DepenencyInjectorImpl,
 }
 
 pub trait DepenencyInjector {
-    
     fn board_use_case(&self) -> impl BoardUseCase;
-    
 }
 
 #[derive(Clone, FromRef)]
@@ -43,8 +30,6 @@ impl DepenencyInjector for DepenencyInjectorImpl {
     }
 }
 
-
-
 pub async fn create_app_state() -> AppState {
     let db_url =
         dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
@@ -59,8 +44,6 @@ pub async fn create_app_state() -> AppState {
     AppState {
         port,
         db_pool: db_pool.clone(),
-        board_state: BoardState {
-            board_use_case: BoardUseCaseImpl { db_pool: db_pool },
-        },
+        di: DepenencyInjectorImpl { db_pool }
     }
 }
