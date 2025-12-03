@@ -1,4 +1,4 @@
-use crate::{AppState, BoardState, thread};
+use crate::{infra::{AppState, BoardState}, thread};
 use axum::{
     Json, Router,
     extract::{Path, State},

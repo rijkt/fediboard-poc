@@ -1,7 +1,7 @@
 use crate::{
-    AppState,
     board::{self},
     file::{self},
+    infra::AppState,
 };
 use axum::{Router, routing::get};
 

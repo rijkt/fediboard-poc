@@ -11,7 +11,7 @@ use sqlx::types::Json;
 use uuid::Uuid;
 
 use crate::{
-    AppState,
+    infra::AppState,
     thread::{
         post::Posts,
         thread_handler::{create_thread, get_thread, get_threads},

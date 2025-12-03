@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::infra::AppState;
 use crate::board::validate_board_name;
 use crate::thread::query::update_posts_query;
 use crate::thread::thread_handler::fetch_thread_by_id;

@@ -1,4 +1,4 @@
-use crate::{AppState, routing};
+use crate::{infra::AppState, routing};
 
 pub(crate) async fn serve<'db>(app_state: AppState) -> () {
     let port = app_state.port.clone();
