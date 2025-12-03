@@ -1,28 +1,7 @@
-use axum::extract::FromRef;
-use sqlx::PgPool;
+use crate::{AppState, routing};
 
-use crate::{board::BoardUseCaseImpl, routing};
-
-
-#[derive(Clone)]
-pub struct AppState{
-     pub db_pool: PgPool,
-     pub board_state: BoardState
-     
-}
-
-#[derive(Clone)]
-pub struct BoardState {
-    pub board_use_case: BoardUseCaseImpl
-}
-
-impl FromRef<AppState> for BoardState {
-    fn from_ref(app_state: &AppState) -> BoardState {
-        app_state.board_state.clone()
-    }
-}
-
-pub(crate) async fn serve<'db>(port: String, app_state: AppState) -> () {
+pub(crate) async fn serve<'db>(app_state: AppState) -> () {
+    let port = app_state.port.clone();
     let app_routes = routing::build_routes(app_state);
     let addr = format!("0.0.0.0:{}", port);
     println!("Serving at http://{}", addr);

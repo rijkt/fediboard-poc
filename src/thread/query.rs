@@ -40,7 +40,10 @@ pub(super) fn build_by_id_query(thread_id: &Uuid) -> ThreadQuery<'_> {
     .bind(thread_id)
 }
 
-pub(super) fn update_posts_query<'q>(posts: &'q Json<Posts>, thread_id: &'q Uuid) -> ThreadQuery<'q> {
+pub(super) fn update_posts_query<'q>(
+    posts: &'q Json<Posts>,
+    thread_id: &'q Uuid,
+) -> ThreadQuery<'q> {
     sqlx::query_as::<_, Thread>(
         r#"
         update thread

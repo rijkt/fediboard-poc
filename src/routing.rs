@@ -1,6 +1,7 @@
 use crate::{
+    AppState,
     board::{self},
-    file::{self}, http::AppState,
+    file::{self},
 };
 use axum::{Router, routing::get};
 
@@ -12,7 +13,6 @@ pub(crate) fn build_routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(async || "Hello from the fediboard".to_string()))
         .nest("/api", api_routes)
-        
 }
 
 async fn hello_handler() -> String {

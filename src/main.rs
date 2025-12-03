@@ -1,6 +1,7 @@
-use sqlx::postgres::PgPoolOptions;
+use axum::extract::FromRef;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 
-use crate::{board::BoardUseCaseImpl, http::AppState};
+use crate::board::BoardUseCaseImpl;
 
 mod board;
 mod file;
@@ -10,6 +11,29 @@ mod thread;
 
 #[tokio::main]
 async fn main() {
+    let app_state = create_app_state().await;
+    http::serve(app_state).await
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub port: String,
+    pub db_pool: PgPool,
+    pub board_state: BoardState,
+}
+
+#[derive(Clone)]
+pub struct BoardState {
+    pub board_use_case: BoardUseCaseImpl,
+}
+
+impl FromRef<AppState> for BoardState {
+    fn from_ref(app_state: &AppState) -> BoardState {
+        app_state.board_state.clone()
+    }
+}
+
+async fn create_app_state() -> AppState {
     let db_url =
         dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
     let port: String = dotenvy::var("PORT").unwrap_or("80".to_owned());
@@ -20,11 +44,11 @@ async fn main() {
         .await
         .expect("Could not connect to database");
 
-    let app_state = AppState {
+    AppState {
+        port,
         db_pool: db_pool.clone(),
-        board_state: http::BoardState {
+        board_state: BoardState {
             board_use_case: BoardUseCaseImpl { db_pool: db_pool },
         },
-    };
-    http::serve(port, app_state).await
+    }
 }

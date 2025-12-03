@@ -1,5 +1,5 @@
+use crate::AppState;
 use crate::board::{fetch_board_from_params, validate_board_name};
-use crate::http::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
 use crate::thread::{Posts, Thread};
