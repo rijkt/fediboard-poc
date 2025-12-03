@@ -1,4 +1,7 @@
-use crate::{infra::{AppState, DepenencyInjector, DepenencyInjectorImpl}, thread};
+use crate::{
+    infra::{AppState, DepenencyInjector, DepenencyInjectorImpl},
+    thread,
+};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -17,9 +20,16 @@ pub(crate) struct Board {
     // pub(crate) tagline: Option<String>,
 }
 
+pub enum BoardError {
+    DbError,
+}
+
 pub trait BoardUseCase {
-    fn get_board_by_name(&self, board_name: &str) -> impl std::future::Future<Output = Result<Board, sqlx::Error>> + Send;
-    fn get_all_boards(&self) -> impl std::future::Future<Output = Result<Vec<Board>, sqlx::Error>> + Send;
+    fn get_board_by_name(
+        &self,
+        board_name: &str,
+    ) -> impl Future<Output = Result<Board, BoardError>> + Send;
+    fn get_all_boards(&self) -> impl Future<Output = Result<Vec<Board>, BoardError>> + Send;
 }
 
 #[derive(Clone)]
@@ -28,14 +38,22 @@ pub struct BoardUseCaseImpl {
 }
 
 impl BoardUseCase for BoardUseCaseImpl {
-    async fn get_board_by_name(&self, board_name: &str) -> Result<Board, sqlx::Error> {
-        board_by_name_query(board_name)
+    async fn get_board_by_name(&self, board_name: &str) -> Result<Board, BoardError> {
+        let fetch_result = board_by_name_query(board_name)
             .fetch_one(&self.db_pool)
-            .await
+            .await;
+        match fetch_result {
+            Ok(board) => Ok(board),
+            Err(_) => Err(BoardError::DbError),
+        }
     }
 
-    async fn get_all_boards(&self) -> Result<Vec<Board>, sqlx::Error> {
-        all_boards_query().fetch_all(&self.db_pool).await
+    async fn get_all_boards(&self) -> Result<Vec<Board>, BoardError> {
+        let fetch_result = all_boards_query().fetch_all(&self.db_pool).await;
+        match fetch_result {
+            Ok(boards) => Ok(boards),
+            Err(_) => Err(BoardError::DbError),
+        }
     }
 }
 
@@ -61,7 +79,9 @@ async fn get_board_by_name(
 }
 
 #[axum::debug_handler]
-async fn get_boards(State(di): State<DepenencyInjectorImpl>) -> Result<Json<Vec<Board>>, StatusCode> {
+async fn get_boards(
+    State(di): State<DepenencyInjectorImpl>,
+) -> Result<Json<Vec<Board>>, StatusCode> {
     let use_case = di.board_use_case();
     match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards)),
