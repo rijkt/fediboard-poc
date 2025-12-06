@@ -1,18 +1,15 @@
 use sqlx::postgres::PgPoolOptions;
-
-use axum::extract::FromRef;
-
 use sqlx::PgPool;
 
 use crate::{
-    board::{BoardUseCase, BoardUseCaseImpl},
-    use_case_registry::UseCaseRegistry,
+    board::BoardUseCaseImpl, use_case_registry::UseCaseRegistry
 };
 
 mod http;
 mod routing;
 
 pub use http::serve;
+pub use dependency_injection::DepenencyInjector;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -21,22 +18,7 @@ pub struct AppState {
     pub di: DepenencyInjector,
 }
 
-#[derive(Clone, FromRef)]
-pub struct DepenencyInjector {
-    pub use_case_registry: UseCaseRegistry,
-}
-
-impl FromRef<AppState> for DepenencyInjector {
-    fn from_ref(app_state: &AppState) -> DepenencyInjector {
-        app_state.di.clone()
-    }
-}
-
-impl DepenencyInjector {
-    pub fn board_use_case(&self) -> impl BoardUseCase {
-        self.use_case_registry.board_use_case()
-    }
-}
+mod dependency_injection;
 
 pub async fn create_app_state() -> AppState {
     let db_url =
