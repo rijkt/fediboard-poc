@@ -48,7 +48,13 @@ pub trait ThreadUseCase {
 
 #[derive(Clone)]
 pub struct ThreadUseCaseImpl {
-    pub db_pool: PgPool,
+    db_pool: PgPool,
+}
+
+impl ThreadUseCaseImpl {
+    pub fn new(db_pool: PgPool) -> Self {
+        Self { db_pool }
+    }
 }
 
 impl ThreadUseCase for ThreadUseCaseImpl {

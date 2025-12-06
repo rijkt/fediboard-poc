@@ -26,7 +26,13 @@ pub trait BoardUseCase {
 
 #[derive(Clone)]
 pub struct BoardUseCaseImpl {
-    pub db_pool: PgPool,
+    db_pool: PgPool,
+}
+
+impl BoardUseCaseImpl {
+    pub fn new(db_pool: PgPool) -> Self {
+        Self { db_pool }
+    }
 }
 
 impl BoardUseCase for BoardUseCaseImpl {

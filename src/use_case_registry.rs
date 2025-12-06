@@ -21,11 +21,7 @@ impl UseCaseRegistry {
 
 pub fn build_registry(db_pool: &sqlx::Pool<sqlx::Postgres>) -> UseCaseRegistry {
     UseCaseRegistry {
-        board_use_case: BoardUseCaseImpl {
-            db_pool: db_pool.clone(),
-        },
-        thread_use_case: ThreadUseCaseImpl {
-            db_pool: db_pool.clone(),
-        },
+        board_use_case: BoardUseCaseImpl::new(db_pool.clone()),
+        thread_use_case: ThreadUseCaseImpl::new(db_pool.clone()),
     }
 }
