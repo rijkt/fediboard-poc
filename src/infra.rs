@@ -44,13 +44,17 @@ pub async fn create_app_state() -> AppState {
         .await
         .expect("Could not connect to database");
 
-    let use_case_registry = UseCaseRegistry::new(BoardUseCaseImpl {
-        db_pool: db_pool.clone(),
-    });
+    let use_case_registry = build_registry(&db_pool);
 
     AppState {
         port,
         db_pool: db_pool.clone(),
         di: DepenencyInjector { use_case_registry },
     }
+}
+
+fn build_registry(db_pool: &sqlx::Pool<sqlx::Postgres>) -> UseCaseRegistry {
+    UseCaseRegistry::new(BoardUseCaseImpl {
+        db_pool: db_pool.clone(),
+    })
 }
