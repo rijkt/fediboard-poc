@@ -1,4 +1,3 @@
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
 use crate::{
@@ -7,6 +6,8 @@ use crate::{
 
 mod http;
 mod routing;
+mod dependency_injection;
+mod db;
 
 pub use http::serve;
 pub use dependency_injection::DepenencyInjector;
@@ -18,18 +19,12 @@ pub struct AppState {
     pub di: DepenencyInjector,
 }
 
-mod dependency_injection;
-
 pub async fn create_app_state() -> AppState {
     let db_url =
         dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
     let port: String = dotenvy::var("PORT").unwrap_or("80".to_owned());
 
-    let db_pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(db_url.as_str())
-        .await
-        .expect("Could not connect to database");
+    let db_pool = db::init_db_pool(db_url).await;
 
     let use_case_registry = build_registry(&db_pool);
 
