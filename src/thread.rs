@@ -14,7 +14,8 @@ use crate::{
     infra::AppState,
     thread::{
         post::Posts,
-        thread_handler::{create_thread, fetch_thread_by_id, get_thread, get_threads},
+        query::build_by_id_query,
+        thread_handler::{create_thread, get_thread, get_threads},
     },
 };
 
@@ -61,16 +62,20 @@ impl ThreadUseCase for ThreadUseCaseImpl {
     async fn get_thread_by_id(
         &self,
         thread_id: &str,
-        board_name: &str,
+        _board_name: &str,
     ) -> Result<Thread, ThreadError> {
+        // TODO: validate with board_name param
         let uuid_result = Uuid::parse_str(thread_id);
         let thread_uuid = match uuid_result {
             Ok(id) => id,
             Err(_) => return Err(ThreadError::IdError),
         };
-        match fetch_thread_by_id(thread_uuid, board_name, &self.db_pool).await {
+        let fetch_result = build_by_id_query(&thread_uuid)
+            .fetch_one(&self.db_pool)
+            .await;
+        match fetch_result {
             Ok(thread) => Ok(thread),
-            Err(_) => Err(ThreadError::DbError),
+            Err(_) => Err(ThreadError::DbError), // TODO: translate db-level error
         }
     }
 }
