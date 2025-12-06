@@ -20,6 +20,41 @@ pub(super) struct ThreadView {
     pub(super) posts: PostsView,
 }
 
+pub enum ThreadError {
+    IdError,
+    DbError,
+}
+pub trait ThreadUseCase {
+    async fn get_thread_by_id(
+        &self,
+        thread_id: &str,
+        board_name: &str,
+    ) -> Result<Thread, ThreadError>;
+}
+
+#[derive(Clone)]
+pub struct ThreaduseCaseImpl {
+    db_pool: PgPool,
+}
+
+impl ThreadUseCase for ThreaduseCaseImpl {
+    async fn get_thread_by_id(
+        &self,
+        thread_id: &str,
+        board_name: &str,
+    ) -> Result<Thread, ThreadError> {
+        let uuid_result = Uuid::parse_str(thread_id);
+        let thread_uuid = match uuid_result {
+            Ok(id) => id,
+            Err(_) => return Err(ThreadError::IdError),
+        };
+        match fetch_thread_by_id(thread_uuid, board_name, &self.db_pool).await {
+            Ok(thread) => Ok(thread),
+            Err(_) => Err(ThreadError::DbError),
+        }
+    }
+}
+
 pub(super) async fn get_threads(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
