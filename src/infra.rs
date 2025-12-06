@@ -1,14 +1,14 @@
 use sqlx::PgPool;
 
-use crate::use_case_registry::{build_registry};
+use crate::use_case_registry::build_registry;
 
+mod db;
+mod dependency_injection;
 mod http;
 mod routing;
-mod dependency_injection;
-mod db;
 
-pub use http::serve;
 pub use dependency_injection::DepenencyInjector;
+pub use http::serve;
 
 #[derive(Clone)]
 pub struct AppState {

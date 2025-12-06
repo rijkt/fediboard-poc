@@ -41,7 +41,9 @@ impl BoardUseCase for BoardUseCaseImpl {
     }
 
     async fn get_all_boards(&self) -> Result<Vec<Board>, BoardError> {
-        let fetch_result = board_query::all_boards_query().fetch_all(&self.db_pool).await;
+        let fetch_result = board_query::all_boards_query()
+            .fetch_all(&self.db_pool)
+            .await;
         match fetch_result {
             Ok(boards) => Ok(boards),
             Err(_) => Err(BoardError::DbError),
@@ -54,7 +56,9 @@ pub(crate) async fn fetch_board_from_params(
     db_pool: &PgPool,
 ) -> Result<Board, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let fetch_result = board_query::board_by_name_query(board_name).fetch_one(db_pool).await;
+    let fetch_result = board_query::board_by_name_query(board_name)
+        .fetch_one(db_pool)
+        .await;
     match fetch_result {
         Ok(board) => Ok(board),
         Err(_) => Err(StatusCode::NOT_FOUND), // TODO: return db-level error
@@ -67,5 +71,3 @@ pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&s
         None => Err(StatusCode::BAD_REQUEST),
     }
 }
-
-

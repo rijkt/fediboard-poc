@@ -1,7 +1,7 @@
 mod board;
 mod file;
-mod thread;
 mod infra;
+mod thread;
 mod use_case_registry;
 
 #[tokio::main]
