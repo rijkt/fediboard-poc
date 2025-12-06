@@ -4,7 +4,10 @@ use axum::extract::FromRef;
 
 use sqlx::PgPool;
 
-use crate::board::{BoardUseCase, BoardUseCaseImpl};
+use crate::{
+    board::{BoardUseCase, BoardUseCaseImpl},
+    use_case_registry::UseCaseRegistry,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -19,9 +22,8 @@ pub trait DepenencyInjector {
 
 #[derive(Clone, FromRef)]
 pub struct DepenencyInjectorImpl {
-    db_pool: PgPool
+    pub use_case_registry: UseCaseRegistry,
 }
-
 
 impl FromRef<AppState> for DepenencyInjectorImpl {
     fn from_ref(app_state: &AppState) -> DepenencyInjectorImpl {
@@ -29,12 +31,9 @@ impl FromRef<AppState> for DepenencyInjectorImpl {
     }
 }
 
-
 impl DepenencyInjector for DepenencyInjectorImpl {
     fn board_use_case(&self) -> impl BoardUseCase {
-        BoardUseCaseImpl{
-            db_pool: self.db_pool.clone()
-        }
+        self.use_case_registry.board_use_case()
     }
 }
 
@@ -49,9 +48,13 @@ pub async fn create_app_state() -> AppState {
         .await
         .expect("Could not connect to database");
 
+    let use_case_registry = UseCaseRegistry::new(BoardUseCaseImpl {
+        db_pool: db_pool.clone(),
+    });
+
     AppState {
         port,
         db_pool: db_pool.clone(),
-        di: DepenencyInjectorImpl { db_pool }
+        di: DepenencyInjectorImpl { use_case_registry },
     }
 }
