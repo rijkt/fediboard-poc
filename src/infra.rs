@@ -1,8 +1,6 @@
 use sqlx::PgPool;
 
-use crate::{
-    board::BoardUseCaseImpl, use_case_registry::UseCaseRegistry
-};
+use crate::use_case_registry::{build_registry};
 
 mod http;
 mod routing;
@@ -33,10 +31,4 @@ pub async fn create_app_state() -> AppState {
         db_pool: db_pool.clone(),
         di: DepenencyInjector { use_case_registry },
     }
-}
-
-fn build_registry(db_pool: &sqlx::Pool<sqlx::Postgres>) -> UseCaseRegistry {
-    UseCaseRegistry::new(BoardUseCaseImpl {
-        db_pool: db_pool.clone(),
-    })
 }

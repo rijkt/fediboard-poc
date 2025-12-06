@@ -6,6 +6,7 @@ pub struct UseCaseRegistry {
 }
 
 impl UseCaseRegistry {
+
     pub fn new(board_use_case: BoardUseCaseImpl) -> Self {
         Self { board_use_case }
     }
@@ -13,4 +14,10 @@ impl UseCaseRegistry {
     pub fn board_use_case(&self) -> impl BoardUseCase {
         self.board_use_case.clone()
     }
+}
+
+pub fn build_registry(db_pool: &sqlx::Pool<sqlx::Postgres>) -> UseCaseRegistry {
+    UseCaseRegistry::new(BoardUseCaseImpl {
+        db_pool: db_pool.clone(),
+    })
 }
