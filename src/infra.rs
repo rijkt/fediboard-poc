@@ -19,7 +19,7 @@ pub trait DepenencyInjector {
 
 #[derive(Clone, FromRef)]
 pub struct DepenencyInjectorImpl {
-    pub db_pool: PgPool
+    db_pool: PgPool
 }
 
 
