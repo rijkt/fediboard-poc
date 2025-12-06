@@ -9,6 +9,11 @@ use crate::{
     use_case_registry::UseCaseRegistry,
 };
 
+mod http;
+mod routing;
+
+pub use http::serve;
+
 #[derive(Clone)]
 pub struct AppState {
     pub port: String,
