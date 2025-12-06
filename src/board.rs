@@ -57,20 +57,6 @@ impl BoardUseCase for BoardUseCaseImpl {
     }
 }
 
-pub(crate) async fn fetch_board_from_params(
-    params: HashMap<String, String>,
-    db_pool: &PgPool,
-) -> Result<Board, StatusCode> {
-    let board_name = validate_board_name(&params)?;
-    let fetch_result = board_query::board_by_name_query(board_name)
-        .fetch_one(db_pool)
-        .await;
-    match fetch_result {
-        Ok(board) => Ok(board),
-        Err(_) => Err(StatusCode::NOT_FOUND), // TODO: return db-level error
-    }
-}
-
 pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
     match params.get("board_name") {
         Some(param) => Ok(param),

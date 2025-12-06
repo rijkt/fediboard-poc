@@ -1,4 +1,4 @@
-use crate::board::{fetch_board_from_params, validate_board_name};
+use crate::board::{BoardUseCase, validate_board_name};
 use crate::infra::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
@@ -24,7 +24,12 @@ pub(super) async fn get_threads(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Vec<ThreadView>>, StatusCode> {
-    let board = fetch_board_from_params(params, &app_state.db_pool).await?;
+    let board_name = validate_board_name(&params)?;
+    let board_use_case = app_state.di.board_use_case();
+    let board = match board_use_case.get_board_by_name(board_name).await {
+        Ok(board) => board,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
     let fetch_result = thread_query::build_by_board_id_query(&board.board_id)
         .fetch_all(&app_state.db_pool) // TODO: paginate
         .await;
@@ -60,7 +65,12 @@ pub(super) async fn create_thread(
     Path(params): Path<HashMap<String, String>>,
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<ThreadView>, StatusCode> {
-    let board = fetch_board_from_params(params, &app_state.db_pool).await?;
+    let board_name = validate_board_name(&params)?;
+    let board_use_case = app_state.di.board_use_case();
+    let board = match board_use_case.get_board_by_name(board_name).await {
+        Ok(board) => board,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
     let original_post = form_to_post(post_creation);
     let post_ser = Sqlx_json(Posts {
         posts: vec![original_post],
