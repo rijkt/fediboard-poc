@@ -1,16 +1,13 @@
 use crate::board::{BoardUseCase, validate_board_name};
 use crate::infra::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
-use crate::thread::query::{self as thread_query, build_by_id_query};
+use crate::thread::query::{self as thread_query};
 use crate::thread::{Posts, Thread, ThreadUseCase};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    PgPool,
-    types::{Json as Sqlx_json, Uuid},
-};
+use sqlx::types::Json as Sqlx_json;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
@@ -87,31 +84,10 @@ pub(super) async fn create_thread(
     }
 }
 
-pub(super) fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
-    let thread_id_param = parse_thread_id(params)?;
-    match Uuid::parse_str(thread_id_param) {
-        Ok(parsed) => Ok(parsed),
-        Err(_) => Err(StatusCode::NOT_FOUND),
-    }
-}
-
 pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
     match params.get("thread_id") {
         Some(param) => Ok(param),
         None => Err(StatusCode::BAD_REQUEST),
-    }
-}
-
-pub(super) async fn fetch_thread_by_id(
-    thread_id: Uuid,
-    _board_name: &str,
-    db_pool: &PgPool,
-) -> Result<Thread, StatusCode> {
-    // TODO: validate with board_name param
-    let fetch_result = build_by_id_query(&thread_id).fetch_one(db_pool).await;
-    match fetch_result {
-        Ok(thread) => Ok(thread),
-        Err(_) => Err(StatusCode::NOT_FOUND), // TODO: translate db-level error
     }
 }
 

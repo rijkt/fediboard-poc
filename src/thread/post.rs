@@ -1,8 +1,8 @@
 use crate::board::validate_board_name;
 use crate::infra::AppState;
+use crate::thread::ThreadUseCase;
 use crate::thread::query::update_posts_query;
-use crate::thread::thread_handler::fetch_thread_by_id;
-use crate::thread::thread_handler::validate_thread_id;
+use crate::thread::thread_handler::parse_thread_id;
 use axum::Form;
 use axum::Json;
 use axum::Router;
@@ -51,9 +51,16 @@ async fn get_posts(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Vec<PostView>>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
-    let post_views = thread.posts.posts.iter().map(to_post_view).collect();
+    let thread_id = parse_thread_id(&params)?;
+    let thread_use_case = app_state.di.thread_use_case();
+    let thread = match thread_use_case
+        .get_thread_by_id(thread_id, board_name)
+        .await
+    {
+        Ok(thread) => thread,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
+    let post_views = thread.posts.posts.iter().map(to_post_view).collect(); // TODO: to use case method
     Ok(Json(post_views))
 }
 
@@ -62,9 +69,16 @@ async fn get_post(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<PostView>, StatusCode> {
     let board_name: &str = validate_board_name(&params)?;
-    let thread_id = validate_thread_id(&params)?;
     let post_id = validate_post_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
+    let thread_id = parse_thread_id(&params)?;
+    let thread_use_case = app_state.di.thread_use_case();
+    let thread = match thread_use_case
+        .get_thread_by_id(thread_id, board_name)
+        .await
+    {
+        Ok(thread) => thread,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };
     let posts = &thread.posts.posts;
     let matching_post = posts.iter().find(|post| post.id == post_id);
     match matching_post {
@@ -79,16 +93,19 @@ async fn create_post(
     Form(post_creation): Form<PostCreation>,
 ) -> Result<Json<PostView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let thread_id = validate_thread_id(&params)?;
     let new_post = form_to_post(post_creation);
-    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
-    let mut to_update = thread.posts.posts.clone();
+    let thread_id = parse_thread_id(&params)?;
+    let thread_use_case = app_state.di.thread_use_case();
+    let thread = match thread_use_case.get_thread_by_id(thread_id, board_name).await {
+        Ok(thread) => thread,
+        Err(_) => return Err(StatusCode::NOT_FOUND),
+    };    let mut to_update = thread.posts.posts.clone();
     to_update.push(new_post);
     let update = Posts {
         posts: to_update.to_vec(),
     };
     let update_ser = Sqlx_json(update);
-    let updated = match update_posts_query(&update_ser, &thread_id)
+    let updated = match update_posts_query(&update_ser, &thread.thread_id)
         .fetch_one(&app_state.db_pool)
         .await
     {
