@@ -98,7 +98,7 @@ pub(super) fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uui
 pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
     match params.get("thread_id") {
         Some(param) => Ok(param),
-        None => return Err(StatusCode::BAD_REQUEST),
+        None => Err(StatusCode::BAD_REQUEST),
     }
 }
 
