@@ -1,5 +1,5 @@
 use crate::{
-    infra::{AppState, DepenencyInjector, DepenencyInjectorImpl},
+    infra::{AppState, DepenencyInjector},
     thread,
 };
 use axum::{
@@ -67,7 +67,7 @@ pub(crate) fn routes(app_state: AppState) -> Router {
 
 #[axum::debug_handler]
 async fn get_board_by_name(
-    State(di): State<DepenencyInjectorImpl>,
+    State(di): State<DepenencyInjector>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Board>, StatusCode> {
     let board_name = validate_board_name(&params)?;
@@ -80,7 +80,7 @@ async fn get_board_by_name(
 
 #[axum::debug_handler]
 async fn get_boards(
-    State(di): State<DepenencyInjectorImpl>,
+    State(di): State<DepenencyInjector>,
 ) -> Result<Json<Vec<Board>>, StatusCode> {
     let use_case = di.board_use_case();
     match use_case.get_all_boards().await {

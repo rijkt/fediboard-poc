@@ -13,26 +13,22 @@ use crate::{
 pub struct AppState {
     pub port: String,
     pub db_pool: PgPool,
-    pub di: DepenencyInjectorImpl,
-}
-
-pub trait DepenencyInjector {
-    fn board_use_case(&self) -> impl BoardUseCase;
+    pub di: DepenencyInjector,
 }
 
 #[derive(Clone, FromRef)]
-pub struct DepenencyInjectorImpl {
+pub struct DepenencyInjector {
     pub use_case_registry: UseCaseRegistry,
 }
 
-impl FromRef<AppState> for DepenencyInjectorImpl {
-    fn from_ref(app_state: &AppState) -> DepenencyInjectorImpl {
+impl FromRef<AppState> for DepenencyInjector {
+    fn from_ref(app_state: &AppState) -> DepenencyInjector {
         app_state.di.clone()
     }
 }
 
-impl DepenencyInjector for DepenencyInjectorImpl {
-    fn board_use_case(&self) -> impl BoardUseCase {
+impl DepenencyInjector {
+    pub fn board_use_case(&self) -> impl BoardUseCase {
         self.use_case_registry.board_use_case()
     }
 }
@@ -55,6 +51,6 @@ pub async fn create_app_state() -> AppState {
     AppState {
         port,
         db_pool: db_pool.clone(),
-        di: DepenencyInjectorImpl { use_case_registry },
+        di: DepenencyInjector { use_case_registry },
     }
 }
