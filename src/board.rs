@@ -9,9 +9,10 @@ use axum::{
     routing::get,
 };
 use serde::Serialize;
-use sqlx::{PgPool, Postgres, postgres::PgArguments, prelude::FromRow};
+use sqlx::{PgPool, prelude::FromRow};
 use std::collections::HashMap;
 use uuid::Uuid;
+mod board_query;
 
 #[derive(FromRow, Serialize)]
 pub(crate) struct Board {
@@ -39,7 +40,7 @@ pub struct BoardUseCaseImpl {
 
 impl BoardUseCase for BoardUseCaseImpl {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, BoardError> {
-        let fetch_result = board_by_name_query(board_name)
+        let fetch_result = board_query::board_by_name_query(board_name)
             .fetch_one(&self.db_pool)
             .await;
         match fetch_result {
@@ -49,7 +50,7 @@ impl BoardUseCase for BoardUseCaseImpl {
     }
 
     async fn get_all_boards(&self) -> Result<Vec<Board>, BoardError> {
-        let fetch_result = all_boards_query().fetch_all(&self.db_pool).await;
+        let fetch_result = board_query::all_boards_query().fetch_all(&self.db_pool).await;
         match fetch_result {
             Ok(boards) => Ok(boards),
             Err(_) => Err(BoardError::DbError),
@@ -94,7 +95,7 @@ pub(crate) async fn fetch_board_from_params(
     db_pool: &PgPool,
 ) -> Result<Board, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let fetch_result = board_by_name_query(board_name).fetch_one(db_pool).await;
+    let fetch_result = board_query::board_by_name_query(board_name).fetch_one(db_pool).await;
     match fetch_result {
         Ok(board) => Ok(board),
         Err(_) => Err(StatusCode::NOT_FOUND), // TODO: return db-level error
@@ -108,24 +109,4 @@ pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&s
     }
 }
 
-pub(crate) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
 
-fn all_boards_query() -> BoardQuery<'static> {
-    sqlx::query_as::<_, Board>(
-        r#"
-            select board_id, name
-            from board
-        "#,
-    )
-}
-
-fn board_by_name_query(board_name: &str) -> BoardQuery<'_> {
-    sqlx::query_as::<_, Board>(
-        r#"
-            select board_id, name
-            from board
-            where $1 = name
-        "#,
-    )
-    .bind(board_name)
-}
