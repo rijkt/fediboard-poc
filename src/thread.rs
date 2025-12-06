@@ -39,11 +39,11 @@ pub enum ThreadError {
     DbError,
 }
 pub trait ThreadUseCase {
-    async fn get_thread_by_id(
+    fn get_thread_by_id(
         &self,
         thread_id: &str,
         board_name: &str,
-    ) -> Result<Thread, ThreadError>;
+    ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 
 #[derive(Clone)]

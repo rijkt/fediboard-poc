@@ -2,7 +2,7 @@ use crate::board::{fetch_board_from_params, validate_board_name};
 use crate::infra::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::query::{self as thread_query, build_by_id_query};
-use crate::thread::{Posts, Thread};
+use crate::thread::{Posts, Thread, ThreadUseCase};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{Form, Json, extract::Path};
@@ -41,8 +41,17 @@ pub(super) async fn get_thread(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
-    let thread_id = validate_thread_id(&params)?;
-    let thread = fetch_thread_by_id(thread_id, board_name, &app_state.db_pool).await?;
+    let thread_id = parse_thread_id(&params)?;
+    let thread_use_case = app_state.di.thread_use_case();
+    let thread = match thread_use_case.get_thread_by_id(thread_id, board_name).await {
+        Ok(thread) => thread,
+        Err(thread_error) => {
+            match thread_error {
+                super::ThreadError::IdError => return Err(StatusCode::BAD_REQUEST),
+                super::ThreadError::DbError => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+            }
+        },
+    };
     Ok(Json(to_thread_view(&thread)))
 }
 
@@ -69,13 +78,17 @@ pub(super) async fn create_thread(
 }
 
 pub(super) fn validate_thread_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
-    let thread_id_param = match params.get("thread_id") {
-        Some(param) => param,
-        None => return Err(StatusCode::BAD_REQUEST),
-    };
+    let thread_id_param = parse_thread_id(params)?;
     match Uuid::parse_str(thread_id_param) {
         Ok(parsed) => Ok(parsed),
         Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
+    match params.get("thread_id") {
+        Some(param) => Ok(param),
+        None => return Err(StatusCode::BAD_REQUEST),
     }
 }
 
