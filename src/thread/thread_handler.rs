@@ -23,14 +23,9 @@ pub(super) async fn get_threads(
 ) -> Result<Json<Vec<ThreadView>>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let board_use_case = app_state.di.board_use_case();
-    let board = match board_use_case.get_board_by_name(board_name).await {
-        Ok(board) => board,
-        Err(_) => return Err(StatusCode::NOT_FOUND),
-    };
-    let fetch_result = thread_query::build_by_board_id_query(&board.board_id)
-        .fetch_all(&app_state.db_pool) // TODO: paginate
-        .await;
-    let threads = match fetch_result {
+    let thread_use_case = app_state.di.thread_use_case();
+    let threads_result = thread_use_case.get_threads_by_board(board_name, board_use_case).await;
+    let threads = match threads_result {
         Ok(threads) => threads,
         Err(_) => return Err(StatusCode::NOT_FOUND),
     };
