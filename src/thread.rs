@@ -50,7 +50,7 @@ pub trait ThreadUseCase {
     fn get_threads_by_board(
         &self,
         board_name: &str,
-        board_use_case: impl BoardUseCase,
+        board_use_case: impl BoardUseCase + Send,
     ) -> impl Future<Output = Result<Vec<Thread>, ThreadError>> + Send;
 }
 
@@ -86,21 +86,23 @@ impl ThreadUseCase for ThreadUseCaseImpl {
         }
     }
 
-    async fn get_threads_by_board(
+    fn get_threads_by_board(
         &self,
         board_name: &str,
-        board_use_case: impl BoardUseCase,
-    ) -> Result<Vec<Thread>, ThreadError> {
-        let board = match board_use_case.get_board_by_name(board_name).await {
-            Ok(board) => board,
-            Err(_) => return Err(ThreadError::DbError), // TODO
-        };
-        let fetch_result = build_by_board_id_query(&board.board_id)
-            .fetch_all(&self.db_pool) // TODO: paginate
-            .await;
-        match fetch_result {
-            Ok(threads) => Ok(threads),
-            Err(_) => Err(ThreadError::DbError),
+        board_use_case: impl BoardUseCase + Send,
+    ) -> impl Future<Output = Result<Vec<Thread>, ThreadError>> + Send {
+        async move {
+            let board = match board_use_case.get_board_by_name(board_name).await {
+                Ok(board) => board,
+                Err(_) => return Err(ThreadError::DbError), // TODO
+            };
+            let fetch_result = build_by_board_id_query(&board.board_id)
+                .fetch_all(&self.db_pool) // TODO: paginate
+                .await;
+            match fetch_result {
+                Ok(threads) => Ok(threads),
+                Err(_) => Err(ThreadError::DbError),
+            }
         }
     }
 }
