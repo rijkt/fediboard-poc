@@ -11,10 +11,10 @@ use sqlx::{PgPool, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
-    board::BoardUseCase,
+    board::{Board, BoardUseCase},
     infra::AppState,
     thread::{
-        post::Posts,
+        post::{Post, Posts},
         query::{build_by_board_id_query, build_by_id_query},
         thread_handler::{create_thread, get_thread, get_threads},
     },
@@ -52,6 +52,12 @@ pub trait ThreadUseCase {
         board_name: &str,
         board_use_case: impl BoardUseCase + Send,
     ) -> impl Future<Output = Result<Vec<Thread>, ThreadError>> + Send;
+
+    fn create_thread(
+        &self,
+        board: Board,
+        original_post: Post,
+    ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 
 #[derive(Clone)]
@@ -103,6 +109,23 @@ impl ThreadUseCase for ThreadUseCaseImpl {
                 Ok(threads) => Ok(threads),
                 Err(_) => Err(ThreadError::DbError),
             }
+        }
+    }
+
+    async fn create_thread(
+        &self,
+        board: Board,
+        original_post: Post,
+    ) -> Result<Thread, ThreadError> {
+        let post_ser = Json(Posts {
+            posts: vec![original_post],
+        });
+        let create_result = query::build_create_query(board.board_id, &post_ser)
+            .fetch_one(&self.db_pool)
+            .await;
+        match create_result {
+            Ok(created) => Ok(created),
+            Err(_) => Err(ThreadError::DbError),
         }
     }
 }

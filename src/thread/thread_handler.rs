@@ -1,13 +1,11 @@
 use crate::board::{BoardUseCase, validate_board_name};
 use crate::infra::AppState;
 use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
-use crate::thread::query::{self as thread_query};
 use crate::thread::{Posts, Thread, ThreadUseCase};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
-use sqlx::types::Json as Sqlx_json;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
@@ -59,17 +57,13 @@ pub(super) async fn create_thread(
 ) -> Result<Json<ThreadView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let board_use_case = app_state.di.board_use_case();
+    let thread_use_case = app_state.di.thread_use_case();
     let board = match board_use_case.get_board_by_name(board_name).await {
         Ok(board) => board,
         Err(_) => return Err(StatusCode::NOT_FOUND),
     };
     let original_post = form_to_post(post_creation);
-    let post_ser = Sqlx_json(Posts {
-        posts: vec![original_post],
-    });
-    let create_result = thread_query::build_create_query(board.board_id, &post_ser)
-        .fetch_one(&app_state.db_pool)
-        .await;
+    let create_result = thread_use_case.create_thread(board, original_post).await;
     match create_result {
         Ok(created) => {
             let view = to_thread_view(&created);
