@@ -82,7 +82,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
             .await;
         match fetch_result {
             Ok(thread) => Ok(thread),
-            Err(_) => Err(ThreadError::DbError), // TODO: translate db-level error
+            Err(_) => Err(ThreadError::DbError),
         }
     }
 
