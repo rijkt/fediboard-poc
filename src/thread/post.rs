@@ -56,7 +56,7 @@ impl PostUseCase for PostUseCaseImpl {
         };
         match (updated.posts).posts.last() {
             Some(post) => Ok(post.to_owned()),
-            None => return Err(PostError::DbError),
+            None => Err(PostError::DbError),
         }
     }
 }
