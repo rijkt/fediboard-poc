@@ -1,6 +1,6 @@
 use axum::extract::FromRef;
 
-use crate::{board::BoardUseCase, infra::AppState, thread::ThreadUseCase, use_case_registry::UseCaseRegistry};
+use crate::{board::BoardUseCase, infra::AppState, thread::{PostUseCase, ThreadUseCase}, use_case_registry::UseCaseRegistry};
 
 #[derive(Clone, FromRef)]
 pub struct DepenencyInjector {
@@ -20,5 +20,9 @@ impl DepenencyInjector {
 
     pub fn thread_use_case(&self) -> impl ThreadUseCase {
         self.use_case_registry.thread_use_case()
+    }
+
+    pub fn post_use_case(&self) -> impl PostUseCase {
+        self.use_case_registry.post_use_case()
     }
 }

@@ -33,8 +33,15 @@ pub trait PostUseCase {
     fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError>;
 }
 
-struct PostUseCaseImpl {
+#[derive(Clone)]
+pub struct PostUseCaseImpl {
     db_pool: PgPool,
+}
+
+impl PostUseCaseImpl {
+    pub(crate) fn new(db_pool: sqlx::Pool<sqlx::Postgres>) -> Self {
+        Self { db_pool}
+    }
 }
 
 impl PostUseCase for PostUseCaseImpl {

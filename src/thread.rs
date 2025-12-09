@@ -20,6 +20,8 @@ use crate::{
     },
 };
 
+pub use post::{PostUseCase, PostUseCaseImpl}; // TODO: only export trait
+
 pub(crate) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_threads))
