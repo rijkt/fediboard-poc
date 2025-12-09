@@ -1,7 +1,5 @@
-use axum::http::StatusCode;
 use serde::Serialize;
 use sqlx::{PgPool, prelude::FromRow};
-use std::collections::HashMap;
 use uuid::Uuid;
 mod board_query;
 
@@ -57,9 +55,3 @@ impl BoardUseCase for BoardUseCaseImpl {
     }
 }
 
-pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
-    match params.get("board_name") {
-        Some(param) => Ok(param),
-        None => Err(StatusCode::BAD_REQUEST),
-    }
-}

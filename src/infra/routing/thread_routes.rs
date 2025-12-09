@@ -1,5 +1,6 @@
-use crate::board::{BoardUseCase, validate_board_name};
+use crate::board::{BoardUseCase};
 use crate::infra::AppState;
+use crate::infra::routing::board_routes::validate_board_name;
 use crate::infra::routing::post_routes::{self, PostCreation, PostsView, form_to_post, to_post_view};
 use crate::thread::{Posts, Thread, ThreadError, ThreadUseCase};
 use axum::Router;

@@ -40,7 +40,7 @@ async fn get_boards(State(di): State<DepenencyInjector>) -> Result<Json<Vec<Boar
     }
 }
 
-pub(crate) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
+pub(super) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
     match params.get("board_name") {
         Some(param) => Ok(param),
         None => Err(StatusCode::BAD_REQUEST),
