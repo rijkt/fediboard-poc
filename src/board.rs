@@ -1,13 +1,14 @@
 use serde::Serialize;
-use sqlx::{PgPool, prelude::FromRow};
+use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::board::board_query::BoardSchema;
 mod board_query;
 
-#[derive(FromRow, Serialize)]
+#[derive(Serialize)]
 pub(crate) struct Board {
     pub(crate) board_id: Uuid,
     pub(crate) name: String,
-    // pub(crate) tagline: Option<String>,
 }
 
 pub enum BoardError {
@@ -39,7 +40,7 @@ impl BoardUseCase for BoardUseCaseImpl {
             .fetch_one(&self.db_pool)
             .await;
         match fetch_result {
-            Ok(board) => Ok(board),
+            Ok(schema) => Ok(to_board(&schema)),
             Err(_) => Err(BoardError::DbError),
         }
     }
@@ -49,9 +50,18 @@ impl BoardUseCase for BoardUseCaseImpl {
             .fetch_all(&self.db_pool)
             .await;
         match fetch_result {
-            Ok(boards) => Ok(boards),
+            Ok(boards) => Ok(boards
+                .iter()
+                .map(|schema: &BoardSchema| to_board(schema))
+                .collect()),
             Err(_) => Err(BoardError::DbError),
         }
     }
 }
 
+fn to_board(schema: &BoardSchema) -> Board {
+    Board {
+        board_id: schema.board_id,
+        name: schema.name.to_owned(),
+    }
+}
