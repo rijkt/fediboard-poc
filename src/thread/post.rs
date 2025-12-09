@@ -22,11 +22,7 @@ pub enum PostError {
     DbError,
 }
 pub trait PostUseCase {
-    async fn post_into_thread(
-        &self,
-        thread: Thread,
-        new_post: Post,
-    ) -> Result<Post, PostError>;
+    fn post_into_thread(&self, thread: Thread, new_post: Post) -> impl Future<Output = Result<Post, PostError>> + Send;
 
     fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError>;
 
@@ -40,16 +36,12 @@ pub struct PostUseCaseImpl {
 
 impl PostUseCaseImpl {
     pub(crate) fn new(db_pool: sqlx::Pool<sqlx::Postgres>) -> Self {
-        Self { db_pool}
+        Self { db_pool }
     }
 }
 
 impl PostUseCase for PostUseCaseImpl {
-    async fn post_into_thread(
-        &self,
-        thread: Thread,
-        new_post: Post,
-    ) -> Result<Post, PostError> {
+    async fn post_into_thread(&self, thread: Thread, new_post: Post) -> Result<Post, PostError> {
         let mut to_update = thread.posts.posts.clone();
         to_update.push(new_post);
         let update = Posts {
@@ -158,27 +150,19 @@ async fn create_post(
     let new_post = form_to_post(post_creation);
     let thread_id = parse_thread_id(&params)?;
     let thread_use_case = app_state.di.thread_use_case();
-    let thread = match thread_use_case.get_thread_by_id(thread_id, board_name).await {
-        Ok(thread) => thread,
-        Err(_) => return Err(StatusCode::NOT_FOUND),
-    };    let mut to_update = thread.posts.posts.clone();
-    to_update.push(new_post);
-    let update = Posts {
-        posts: to_update.to_vec(),
-    };
-    let update_ser = Sqlx_json(update);
-    let updated = match update_posts_query(&update_ser, &thread.thread_id)
-        .fetch_one(&app_state.db_pool)
+    let thread = match thread_use_case
+        .get_thread_by_id(thread_id, board_name)
         .await
     {
         Ok(thread) => thread,
-        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(_) => return Err(StatusCode::NOT_FOUND),
     };
-    let last_post: &Post = match (updated.posts).posts.last() {
-        Some(post) => post,
-        None => return Err(StatusCode::INTERNAL_SERVER_ERROR),
-    };
-    Ok(Json(to_post_view(last_post)))
+    let post_use_case = app_state.di.post_use_case();
+    let created = post_use_case.post_into_thread(thread, new_post).await;
+    match created {
+        Ok(post) => Ok(Json(to_post_view(&post))),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
 }
 
 pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
