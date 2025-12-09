@@ -4,9 +4,9 @@ use super::Board;
 
 use sqlx::Postgres;
 
-pub(crate) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
+pub(super) type BoardQuery<'q> = sqlx::query::QueryAs<'q, Postgres, Board, PgArguments>;
 
-pub(crate) fn all_boards_query() -> BoardQuery<'static> {
+pub(super) fn all_boards_query() -> BoardQuery<'static> {
     sqlx::query_as::<_, Board>(
         r#"
             select board_id, name
@@ -15,7 +15,7 @@ pub(crate) fn all_boards_query() -> BoardQuery<'static> {
     )
 }
 
-pub(crate) fn board_by_name_query(board_name: &str) -> BoardQuery<'_> {
+pub(super) fn board_by_name_query(board_name: &str) -> BoardQuery<'_> {
     sqlx::query_as::<_, Board>(
         r#"
             select board_id, name
