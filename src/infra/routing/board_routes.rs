@@ -20,6 +20,13 @@ pub(super) fn routes(app_state: AppState) -> Router {
         .nest("/{board_name}/threads", thread_routes::routes(app_state))
 }
 
+pub(super) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
+    match params.get("board_name") {
+        Some(param) => Ok(param),
+        None => Err(StatusCode::BAD_REQUEST),
+    }
+}
+
 async fn get_board_by_name(
     State(di): State<DepenencyInjector>,
     Path(params): Path<HashMap<String, String>>,
@@ -37,12 +44,5 @@ async fn get_boards(State(di): State<DepenencyInjector>) -> Result<Json<Vec<Boar
     match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards)),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
-}
-
-pub(super) fn validate_board_name(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
-    match params.get("board_name") {
-        Some(param) => Ok(param),
-        None => Err(StatusCode::BAD_REQUEST),
     }
 }

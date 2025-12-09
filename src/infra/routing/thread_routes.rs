@@ -20,6 +20,14 @@ pub(super) fn routes(app_state: AppState) -> Router {
         .nest("/{thread_id}/posts", post_routes::routes(app_state))
 }
 
+
+pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
+    match params.get("thread_id") {
+        Some(param) => Ok(param),
+        None => Err(StatusCode::BAD_REQUEST),
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub(super) struct ThreadView {
     pub(super) thread_id: String,
@@ -85,13 +93,6 @@ pub(super) async fn create_thread(
             Ok(Json(view))
         }
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
-}
-
-pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
-    match params.get("thread_id") {
-        Some(param) => Ok(param),
-        None => Err(StatusCode::BAD_REQUEST),
     }
 }
 
