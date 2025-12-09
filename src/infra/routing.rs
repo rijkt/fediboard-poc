@@ -6,7 +6,7 @@ mod file_routes;
 mod post_routes;
 mod thread_routes;
 
-pub(crate) fn build_routes(app_state: AppState) -> Router {
+pub(super) fn build_routes(app_state: AppState) -> Router {
     let api_routes = Router::new()
         .route("/", get(hello_handler))
         .nest("/boards", board_routes::routes(app_state))

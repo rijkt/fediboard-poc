@@ -17,7 +17,7 @@ use crate::{
     thread::{self, Post, PostUseCase, ThreadUseCase},
 };
 
-pub(crate) fn routes(app_state: AppState) -> Router {
+pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_posts))
         .route("/", post(create_post))

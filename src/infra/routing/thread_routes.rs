@@ -11,7 +11,7 @@ use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub(crate) fn routes(app_state: AppState) -> Router {
+pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_threads))
         .route("/", post(create_thread))
