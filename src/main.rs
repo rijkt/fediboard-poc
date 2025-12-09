@@ -1,5 +1,4 @@
 mod board;
-mod file;
 mod infra;
 mod thread;
 mod use_case_registry;

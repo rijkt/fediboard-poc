@@ -1,12 +1,23 @@
 use crate::board::{BoardUseCase, validate_board_name};
 use crate::infra::AppState;
-use crate::thread::post::{PostCreation, PostsView, form_to_post, to_post_view};
-use crate::thread::{Posts, Thread, ThreadUseCase};
+use crate::infra::routing::post_routes::{self, PostCreation, PostsView, form_to_post, to_post_view};
+use crate::thread::{Posts, Thread, ThreadError, ThreadUseCase};
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::routing::{get, post};
 use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+pub(crate) fn routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/", get(get_threads))
+        .route("/", post(create_thread))
+        .route("/{thread_id}", get(get_thread))
+        .with_state(app_state.clone())
+        .nest("/{thread_id}/posts", post_routes::routes(app_state))
+}
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct ThreadView {
@@ -22,7 +33,9 @@ pub(super) async fn get_threads(
     let board_name = validate_board_name(&params)?;
     let board_use_case = app_state.di.board_use_case();
     let thread_use_case = app_state.di.thread_use_case();
-    let threads_result = thread_use_case.get_threads_by_board(board_name, board_use_case).await;
+    let threads_result = thread_use_case
+        .get_threads_by_board(board_name, board_use_case)
+        .await;
     let threads = match threads_result {
         Ok(threads) => threads,
         Err(_) => return Err(StatusCode::NOT_FOUND),
@@ -38,13 +51,14 @@ pub(super) async fn get_thread(
     let board_name = validate_board_name(&params)?;
     let thread_id = parse_thread_id(&params)?;
     let thread_use_case = app_state.di.thread_use_case();
-    let thread = match thread_use_case.get_thread_by_id(thread_id, board_name).await {
+    let thread = match thread_use_case
+        .get_thread_by_id(thread_id, board_name)
+        .await
+    {
         Ok(thread) => thread,
-        Err(thread_error) => {
-            match thread_error {
-                super::ThreadError::IdError => return Err(StatusCode::BAD_REQUEST),
-                super::ThreadError::DbError => return Err(StatusCode::INTERNAL_SERVER_ERROR),
-            }
+        Err(thread_error) => match thread_error {
+            ThreadError::IdError => return Err(StatusCode::BAD_REQUEST),
+            ThreadError::DbError => return Err(StatusCode::INTERNAL_SERVER_ERROR),
         },
     };
     Ok(Json(to_thread_view(&thread)))

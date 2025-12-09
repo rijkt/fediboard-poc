@@ -9,8 +9,7 @@ use axum::{
 
 use crate::{
     board::{Board, BoardUseCase},
-    infra::{AppState, DepenencyInjector},
-    thread,
+    infra::{AppState, DepenencyInjector, routing::thread_routes},
 };
 
 pub(crate) fn routes(app_state: AppState) -> Router {
@@ -18,7 +17,7 @@ pub(crate) fn routes(app_state: AppState) -> Router {
         .route("/", get(get_boards))
         .route("/{board_name}", get(get_board_by_name))
         .with_state(app_state.clone())
-        .nest("/{board_name}/threads", thread::routes(app_state))
+        .nest("/{board_name}/threads", thread_routes::routes(app_state))
 }
 
 async fn get_board_by_name(

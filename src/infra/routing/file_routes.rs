@@ -1,6 +1,6 @@
 use axum::{Router, extract::Multipart, routing::post};
 
-pub(crate) fn routes() -> Router {
+pub(super) fn routes() -> Router {
     Router::new().route("/", post(upload_file))
 }
 

@@ -1,35 +1,15 @@
 mod post;
 mod query;
-mod thread_handler;
-
-use axum::{
-    Router,
-    routing::{get, post},
-};
 use sqlx::types::Json;
 use sqlx::{PgPool, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
     board::{Board, BoardUseCase},
-    infra::AppState,
-    thread::{
-        post::{Post, Posts},
-        query::{build_by_board_id_query, build_by_id_query},
-        thread_handler::{create_thread, get_thread, get_threads},
-    },
+    thread::query::{build_by_board_id_query, build_by_id_query},
 };
 
-pub use post::{PostUseCase, PostUseCaseImpl}; // TODO: only export trait
-
-pub(crate) fn routes(app_state: AppState) -> Router {
-    Router::new()
-        .route("/", get(get_threads))
-        .route("/", post(create_thread))
-        .route("/{thread_id}", get(get_thread))
-        .with_state(app_state.clone())
-        .nest("/{thread_id}/posts", post::routes(app_state))
-}
+pub use post::{Post, PostUseCase, PostUseCaseImpl, Posts, extract_post_by_id, extract_posts}; // TODO: only export trait
 
 #[derive(FromRow)]
 pub struct Thread {
