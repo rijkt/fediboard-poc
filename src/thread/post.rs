@@ -14,6 +14,7 @@ use axum::routing::get;
 use axum::routing::post;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::PgPool;
 use sqlx::types::{Json as Sqlx_json, Uuid};
 use std::collections::HashMap;
 
@@ -24,12 +25,50 @@ pub trait PostUseCase {
     async fn post_into_thread(
         &self,
         thread: Thread,
-        post_creation: PostCreation,
+        new_post: Post,
     ) -> Result<Post, PostError>;
 
     fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError>;
 
     fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError>;
+}
+
+struct PostUseCaseImpl {
+    db_pool: PgPool,
+}
+
+impl PostUseCase for PostUseCaseImpl {
+    async fn post_into_thread(
+        &self,
+        thread: Thread,
+        new_post: Post,
+    ) -> Result<Post, PostError> {
+        let mut to_update = thread.posts.posts.clone();
+        to_update.push(new_post);
+        let update = Posts {
+            posts: to_update.to_vec(),
+        };
+        let update_ser = Sqlx_json(update);
+        let updated = match update_posts_query(&update_ser, &thread.thread_id)
+            .fetch_one(&self.db_pool)
+            .await
+        {
+            Ok(thread) => thread,
+            Err(_) => return Err(PostError::DbError),
+        };
+        match (updated.posts).posts.last() {
+            Some(post) => Ok(post.to_owned()),
+            None => return Err(PostError::DbError),
+        }
+    }
+
+    fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError> {
+        todo!()
+    }
+
+    fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError> {
+        todo!()
+    }
 }
 
 pub(super) fn routes(app_state: AppState) -> Router {
