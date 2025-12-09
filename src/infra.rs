@@ -1,5 +1,3 @@
-use sqlx::PgPool;
-
 use crate::use_case_registry::build_registry;
 
 mod db;
@@ -13,7 +11,6 @@ pub use http::serve;
 #[derive(Clone)]
 pub struct AppState {
     pub port: String,
-    pub db_pool: PgPool,
     pub di: DepenencyInjector,
 }
 
@@ -21,14 +18,10 @@ pub async fn create_app_state() -> AppState {
     let db_url =
         dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
     let port: String = dotenvy::var("PORT").unwrap_or("80".to_owned());
-
     let db_pool = db::init_db_pool(db_url).await;
-
     let use_case_registry = build_registry(&db_pool);
-
     AppState {
         port,
-        db_pool: db_pool.clone(),
         di: DepenencyInjector { use_case_registry },
     }
 }
