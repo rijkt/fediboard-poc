@@ -1,5 +1,6 @@
 use crate::board::validate_board_name;
 use crate::infra::AppState;
+use crate::thread::Thread;
 use crate::thread::ThreadUseCase;
 use crate::thread::query::update_posts_query;
 use crate::thread::thread_handler::parse_thread_id;
@@ -15,6 +16,21 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::types::{Json as Sqlx_json, Uuid};
 use std::collections::HashMap;
+
+pub enum PostError {
+    DbError,
+}
+pub trait PostUseCase {
+    async fn post_into_thread(
+        &self,
+        thread: Thread,
+        post_creation: PostCreation,
+    ) -> Result<Post, PostError>;
+
+    fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError>;
+
+    fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError>;
+}
 
 pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
