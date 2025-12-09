@@ -22,16 +22,28 @@ pub enum PostError {
     DbError,
 }
 pub trait PostUseCase {
-    fn post_into_thread(&self, thread: Thread, new_post: Post) -> impl Future<Output = Result<Post, PostError>> + Send;
-
-    fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError>;
-
-    fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError>;
+    fn post_into_thread(
+        &self,
+        thread: Thread,
+        new_post: Post,
+    ) -> impl Future<Output = Result<Post, PostError>> + Send;
 }
 
 #[derive(Clone)]
 pub struct PostUseCaseImpl {
     db_pool: PgPool,
+}
+
+pub fn extract_posts(thread: Thread) -> Vec<Post> {
+    thread.posts.posts.clone()
+}
+
+pub fn extract_post_by_id(post_id: Uuid, thread: Thread) -> Option<Post> {
+    let posts = thread.posts.posts.clone();
+    posts
+        .iter()
+        .find(|post| post.id == post_id)
+        .map(|p| p.to_owned())
 }
 
 impl PostUseCaseImpl {
@@ -59,14 +71,6 @@ impl PostUseCase for PostUseCaseImpl {
             Some(post) => Ok(post.to_owned()),
             None => return Err(PostError::DbError),
         }
-    }
-
-    fn get_posts(thread: Thread) -> Result<Vec<Post>, PostError> {
-        todo!()
-    }
-
-    fn get_post(post_id: Uuid, thread: Thread) -> Result<Post, PostError> {
-        todo!()
     }
 }
 
@@ -114,7 +118,7 @@ async fn get_posts(
         Ok(thread) => thread,
         Err(_) => return Err(StatusCode::NOT_FOUND),
     };
-    let post_views = thread.posts.posts.iter().map(to_post_view).collect(); // TODO: to use case method
+    let post_views = extract_posts(thread).iter().map(to_post_view).collect();
     Ok(Json(post_views))
 }
 
@@ -126,17 +130,15 @@ async fn get_post(
     let post_id = validate_post_id(&params)?;
     let thread_id = parse_thread_id(&params)?;
     let thread_use_case = app_state.di.thread_use_case();
-    let thread = match thread_use_case
+    let thread_result = thread_use_case
         .get_thread_by_id(thread_id, board_name)
-        .await
-    {
+        .await;
+    let thread = match thread_result {
         Ok(thread) => thread,
         Err(_) => return Err(StatusCode::NOT_FOUND),
     };
-    let posts = &thread.posts.posts;
-    let matching_post = posts.iter().find(|post| post.id == post_id);
-    match matching_post {
-        Some(post) => Ok(Json(to_post_view(post))),
+    match extract_post_by_id(post_id, thread) {
+        Some(post) => Ok(Json(to_post_view(&post))),
         None => Err(StatusCode::NOT_FOUND),
     }
 }
