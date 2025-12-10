@@ -18,6 +18,13 @@ pub struct Thread {
     pub(crate) posts: Json<Posts>,
 }
 
+pub struct ThreadCreation {
+    pub name: Option<String>,
+    pub subject: Option<String>,
+    pub content: Option<String>,
+    pub media_url: Option<String>,
+}
+
 pub enum ThreadError {
     IdError,
     DbError,
@@ -38,7 +45,7 @@ pub trait ThreadUseCase {
     fn create_thread(
         &self,
         board: Board,
-        original_post: Post,
+        thread_creation: ThreadCreation,
     ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 
@@ -97,10 +104,17 @@ impl ThreadUseCase for ThreadUseCaseImpl {
     async fn create_thread(
         &self,
         board: Board,
-        original_post: Post,
+        thread_creation: ThreadCreation,
     ) -> Result<Thread, ThreadError> {
+        let initial_post = Post {
+            id: Uuid::new_v4(),
+            name: thread_creation.name,
+            subject: thread_creation.subject,
+            content: thread_creation.content,
+            media_url: thread_creation.media_url,
+        };
         let post_ser = Json(Posts {
-            posts: vec![original_post],
+            posts: vec![initial_post],
         });
         let create_result = query::build_create_query(board.board_id, &post_ser)
             .fetch_one(&self.db_pool)

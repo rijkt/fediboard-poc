@@ -1,8 +1,8 @@
-use crate::board::{BoardUseCase};
+use crate::board::BoardUseCase;
 use crate::infra::AppState;
 use crate::infra::routing::board_routes::validate_board_name;
-use crate::infra::routing::post_routes::{self, PostCreation, PostsView, form_to_post, to_post_view};
-use crate::thread::{Posts, Thread, ThreadError, ThreadUseCase};
+use crate::infra::routing::post_routes::{self, PostCreation, PostsView, to_post_view};
+use crate::thread::{Posts, Thread, ThreadCreation, ThreadError, ThreadUseCase};
 use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -19,7 +19,6 @@ pub(super) fn routes(app_state: AppState) -> Router {
         .with_state(app_state.clone())
         .nest("/{thread_id}/posts", post_routes::routes(app_state))
 }
-
 
 pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, StatusCode> {
     match params.get("thread_id") {
@@ -85,14 +84,23 @@ pub(super) async fn create_thread(
         Ok(board) => board,
         Err(_) => return Err(StatusCode::NOT_FOUND),
     };
-    let original_post = form_to_post(post_creation);
-    let create_result = thread_use_case.create_thread(board, original_post).await;
+    let thread_creation = to_thread_creation(post_creation);
+    let create_result = thread_use_case.create_thread(board, thread_creation).await;
     match create_result {
         Ok(created) => {
             let view = to_thread_view(&created);
             Ok(Json(view))
         }
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+fn to_thread_creation(post_creation: PostCreation) -> crate::thread::ThreadCreation {
+    ThreadCreation {
+        name: post_creation.name,
+        subject: post_creation.subject,
+        content: post_creation.content,
+        media_url: post_creation.media_url,
     }
 }
 

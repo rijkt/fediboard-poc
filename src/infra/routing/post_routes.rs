@@ -68,7 +68,7 @@ pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid,
     }
 }
 
-pub(super) fn form_to_post(post_creation: PostCreation) -> Post {
+fn form_to_post(post_creation: PostCreation) -> Post {
     Post {
         id: Uuid::new_v4(),
         name: post_creation.name,
