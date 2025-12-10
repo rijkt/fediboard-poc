@@ -1,4 +1,5 @@
 use crate::thread::Thread;
+use crate::thread::query::PostsSchema;
 use crate::thread::query::update_posts_query;
 use serde::Deserialize;
 use serde::Serialize;
@@ -43,7 +44,7 @@ impl PostUseCase for PostUseCaseImpl {
     async fn post_into_thread(&self, thread: Thread, new_post: Post) -> Result<Post, PostError> {
         let mut to_update = thread.posts.posts.clone();
         to_update.push(new_post);
-        let update = Posts {
+        let update = PostsSchema {
             posts: to_update.to_vec(),
         };
         let update_ser = Sqlx_json(update);
@@ -70,7 +71,6 @@ pub struct Post {
     pub media_url: Option<String>,
 }
 
-#[derive(Serialize)]
 pub struct Posts {
     pub posts: Vec<Post>,
 }

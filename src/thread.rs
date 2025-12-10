@@ -1,7 +1,7 @@
 mod post;
 mod query;
 
-use crate::thread::query::ThreadSchema;
+use crate::thread::query::{PostsSchema, ThreadSchema};
 use crate::{
     board::{Board, BoardUseCase},
     thread::query::{build_by_board_id_query, build_by_id_query},
@@ -113,7 +113,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
             content: thread_creation.content,
             media_url: thread_creation.media_url,
         };
-        let post_ser = Json(Posts {
+        let post_ser = Json(PostsSchema {
             posts: vec![initial_post],
         });
         let create_result = query::build_create_query(board.board_id, &post_ser)
