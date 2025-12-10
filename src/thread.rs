@@ -1,18 +1,17 @@
 mod post;
 mod query;
 
-use sqlx::types::Json;
-use sqlx::{PgPool, prelude::FromRow};
-use uuid::Uuid;
 use crate::thread::query::ThreadSchema;
 use crate::{
     board::{Board, BoardUseCase},
     thread::query::{build_by_board_id_query, build_by_id_query},
 };
+use sqlx::PgPool;
+use sqlx::types::Json;
+use uuid::Uuid;
 
 pub use post::{Post, PostUseCase, PostUseCaseImpl, Posts, extract_post_by_id, extract_posts}; // TODO: only export trait
 
-#[derive(FromRow)]
 pub struct Thread {
     pub(crate) thread_id: Uuid,
     pub(crate) board_id: Uuid,
