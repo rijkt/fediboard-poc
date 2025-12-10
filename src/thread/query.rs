@@ -1,4 +1,5 @@
-use crate::thread::Posts;
+use crate::thread::{Post, Posts};
+use serde::Deserialize;
 use sqlx::prelude::FromRow;
 use sqlx::{
     Postgres,
@@ -10,7 +11,12 @@ use sqlx::{
 pub(super) struct ThreadSchema {
     pub(super) thread_id: Uuid,
     pub(super) board_id: Uuid,
-    pub(super) posts: Json<Posts>,
+    pub(super) posts: Json<PostsSchema>,
+}
+
+#[derive(Deserialize)]
+pub(super) struct PostsSchema {
+    pub(super) posts: Vec<Post>,
 }
 
 pub(super) type ThreadQuery<'q> = sqlx::query::QueryAs<'q, Postgres, ThreadSchema, PgArguments>;

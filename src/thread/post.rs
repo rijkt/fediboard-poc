@@ -70,7 +70,7 @@ pub struct Post {
     pub media_url: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct Posts {
     pub posts: Vec<Post>,
 }

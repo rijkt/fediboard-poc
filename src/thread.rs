@@ -15,7 +15,7 @@ pub use post::{Post, PostUseCase, PostUseCaseImpl, Posts, extract_post_by_id, ex
 pub struct Thread {
     pub(crate) thread_id: Uuid,
     pub(crate) board_id: Uuid,
-    pub(crate) posts: Json<Posts>,
+    pub(crate) posts: Posts,
 }
 
 pub struct ThreadCreation {
@@ -131,8 +131,8 @@ fn to_domain(thread_schema: &ThreadSchema) -> Thread {
     Thread {
         thread_id: thread_schema.thread_id,
         board_id: thread_schema.board_id,
-        posts: Json(Posts {
+        posts: Posts {
             posts: posts.iter().map(|p| p.clone()).collect(), // TODO: simplify
-        }),
+        },
     }
 }
