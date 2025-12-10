@@ -1,8 +1,6 @@
 use crate::thread::Thread;
 use crate::thread::query::PostsSchema;
 use crate::thread::query::update_posts_query;
-use serde::Deserialize;
-use serde::Serialize;
 use sqlx::PgPool;
 use sqlx::types::{Json as Sqlx_json, Uuid};
 
@@ -62,7 +60,7 @@ impl PostUseCase for PostUseCaseImpl {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone)]
 pub struct Post {
     pub id: Uuid,
     pub name: Option<String>, // poster name

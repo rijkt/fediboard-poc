@@ -16,7 +16,16 @@ pub(super) struct ThreadSchema {
 
 #[derive(Deserialize, Serialize)]
 pub(super) struct PostsSchema {
-    pub(super) posts: Vec<Post>,
+    pub(super) posts: Vec<PostSchema>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PostSchema {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub subject: Option<String>,
+    pub content: Option<String>,
+    pub media_url: Option<String>,
 }
 
 pub(super) type ThreadQuery<'q> = sqlx::query::QueryAs<'q, Postgres, ThreadSchema, PgArguments>;
