@@ -1,9 +1,10 @@
 mod post;
 mod query;
+
 use sqlx::types::Json;
 use sqlx::{PgPool, prelude::FromRow};
 use uuid::Uuid;
-
+use crate::thread::query::ThreadSchema;
 use crate::{
     board::{Board, BoardUseCase},
     thread::query::{build_by_board_id_query, build_by_id_query},
@@ -76,7 +77,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
             .fetch_one(&self.db_pool)
             .await;
         match fetch_result {
-            Ok(thread) => Ok(thread),
+            Ok(thread) => Ok(to_domain(&thread)),
             Err(_) => Err(ThreadError::DbError),
         }
     }
@@ -95,7 +96,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
                 .fetch_all(&self.db_pool) // TODO: paginate
                 .await;
             match fetch_result {
-                Ok(threads) => Ok(threads),
+                Ok(threads) => Ok(threads.iter().map(|p| to_domain(p)).collect()),
                 Err(_) => Err(ThreadError::DbError),
             }
         }
@@ -120,8 +121,19 @@ impl ThreadUseCase for ThreadUseCaseImpl {
             .fetch_one(&self.db_pool)
             .await;
         match create_result {
-            Ok(created) => Ok(created),
+            Ok(created) => Ok(to_domain(&created)),
             Err(_) => Err(ThreadError::DbError),
         }
+    }
+}
+
+fn to_domain(thread_schema: &ThreadSchema) -> Thread {
+    let posts = &thread_schema.posts.posts;
+    Thread {
+        thread_id: thread_schema.thread_id,
+        board_id: thread_schema.board_id,
+        posts: Json(Posts {
+            posts: posts.iter().map(|p| p.clone()).collect(), // TODO: simplify
+        }),
     }
 }
