@@ -11,6 +11,13 @@ use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Serialize, Deserialize)]
+pub(super) struct ThreadView {
+    pub(super) thread_id: String,
+    pub(super) board_id: String,
+    pub(super) posts: PostsView,
+}
+
 pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_threads))
@@ -27,14 +34,7 @@ pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, 
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub(super) struct ThreadView {
-    pub(super) thread_id: String,
-    pub(super) board_id: String,
-    pub(super) posts: PostsView,
-}
-
-pub(super) async fn get_threads(
+async fn get_threads(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Vec<ThreadView>>, StatusCode> {
@@ -52,7 +52,7 @@ pub(super) async fn get_threads(
     Ok(Json(views))
 }
 
-pub(super) async fn get_thread(
+async fn get_thread(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<ThreadView>, StatusCode> {
@@ -72,7 +72,7 @@ pub(super) async fn get_thread(
     Ok(Json(to_thread_view(&thread)))
 }
 
-pub(super) async fn create_thread(
+async fn create_thread(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
     Form(post_creation): Form<PostCreation>,

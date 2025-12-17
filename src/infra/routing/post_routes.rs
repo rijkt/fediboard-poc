@@ -17,14 +17,6 @@ use crate::{
     thread::{self, Post, PostUseCase, ThreadUseCase},
 };
 
-pub(super) fn routes(app_state: AppState) -> Router {
-    Router::new()
-        .route("/", get(get_posts))
-        .route("/", post(create_post))
-        .route("/{post_id}", get(get_post))
-        .with_state(app_state)
-}
-
 #[derive(Serialize, Deserialize)]
 pub(super) struct PostsView {
     pub(super) posts: Vec<PostView>,
@@ -33,10 +25,26 @@ pub(super) struct PostsView {
 #[derive(Serialize, Deserialize)]
 pub(super) struct PostView {
     pub(super) id: String,
-    pub(super) name: Option<String>, // poster name
+    pub(super) name: Option<String>,
     pub(super) subject: Option<String>,
     pub(super) content: Option<String>,
     pub(super) media_url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct PostCreation {
+    pub(super) name: Option<String>,
+    pub(super) subject: Option<String>,
+    pub(super) content: Option<String>,
+    pub(super) media_url: Option<String>,
+}
+
+pub(super) fn routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/", get(get_posts))
+        .route("/", post(create_post))
+        .route("/{post_id}", get(get_post))
+        .with_state(app_state)
 }
 
 pub(super) fn to_post_view(post: &Post) -> PostView {
@@ -46,35 +54,6 @@ pub(super) fn to_post_view(post: &Post) -> PostView {
         subject: post.subject.clone(),
         content: post.content.clone(),
         media_url: post.media_url.clone(),
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub(super) struct PostCreation {
-    pub(super) name: Option<String>, // poster name
-    pub(super) subject: Option<String>,
-    pub(super) content: Option<String>,
-    pub(super) media_url: Option<String>,
-}
-
-pub(super) fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
-    let post_id_param = match params.get("post_id") {
-        Some(param) => param,
-        None => return Err(StatusCode::BAD_REQUEST),
-    };
-    match Uuid::parse_str(post_id_param) {
-        Ok(parsed) => Ok(parsed),
-        Err(_) => Err(StatusCode::NOT_FOUND),
-    }
-}
-
-fn form_to_post(post_creation: PostCreation) -> Post {
-    Post {
-        id: Uuid::new_v4(),
-        name: post_creation.name,
-        subject: post_creation.subject,
-        content: post_creation.content,
-        media_url: post_creation.media_url,
     }
 }
 
@@ -120,6 +99,17 @@ async fn get_post(
     }
 }
 
+fn validate_post_id(params: &HashMap<String, String>) -> Result<Uuid, StatusCode> {
+    let post_id_param = match params.get("post_id") {
+        Some(param) => param,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+    match Uuid::parse_str(post_id_param) {
+        Ok(parsed) => Ok(parsed),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
 async fn create_post(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
@@ -141,5 +131,15 @@ async fn create_post(
     match created {
         Ok(post) => Ok(Json(to_post_view(&post))),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+fn form_to_post(post_creation: PostCreation) -> Post {
+    Post {
+        id: Uuid::new_v4(),
+        name: post_creation.name,
+        subject: post_creation.subject,
+        content: post_creation.content,
+        media_url: post_creation.media_url,
     }
 }
