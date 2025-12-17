@@ -10,7 +10,7 @@ pub use post::{
 pub use thread_use_case::{ThreadCreation, ThreadError, ThreadUseCase, thread_use_case};
 
 pub struct Thread {
-    pub(crate) thread_id: Uuid,
-    pub(crate) board_id: Uuid,
-    pub(crate) posts: Posts,
+    pub thread_id: Uuid,
+    pub board_id: Uuid,
+    pub posts: Posts,
 }
