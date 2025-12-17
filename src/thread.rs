@@ -55,7 +55,6 @@ pub fn thread_use_case(db_pool: PgPool) -> impl ThreadUseCase {
     }
 }
 
-#[derive(Clone)]
 struct ThreadUseCaseImpl {
     db_pool: PgPool,
 }

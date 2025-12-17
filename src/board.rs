@@ -27,7 +27,6 @@ pub fn board_use_case(db_pool: PgPool) -> impl BoardUseCase {
     }
 }
 
-#[derive(Clone)]
 struct BoardUseCaseImpl {
     db_pool: PgPool,
 }

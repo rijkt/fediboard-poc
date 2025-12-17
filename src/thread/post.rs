@@ -23,7 +23,6 @@ pub fn post_use_case(db_pool: PgPool) -> impl PostUseCase {
 
 }
 
-#[derive(Clone)]
 struct PostUseCaseImpl {
     db_pool: PgPool,
 }
