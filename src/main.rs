@@ -1,7 +1,6 @@
 mod board;
 mod infra;
 mod thread;
-mod use_case_registry;
 
 #[tokio::main]
 async fn main() {
