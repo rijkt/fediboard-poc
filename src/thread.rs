@@ -95,7 +95,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
                 .fetch_all(&self.db_pool) // TODO: paginate
                 .await;
             match fetch_result {
-                Ok(threads) => Ok(threads.iter().map(|p| to_domain(p)).collect()),
+                Ok(threads) => Ok(threads.iter().map(to_domain).collect()),
                 Err(_) => Err(ThreadError::DbError),
             }
         }
@@ -133,7 +133,7 @@ fn to_domain(thread_schema: &ThreadSchema) -> Thread {
         board_id: thread_schema.board_id,
         posts: Posts {
             posts: posts
-                .into_iter()
+                .iter()
                 .map(|p| Post {
                     id: p.id,
                     name: p.name.clone(),

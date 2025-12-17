@@ -1,4 +1,3 @@
-use crate::thread::Post;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use sqlx::{
