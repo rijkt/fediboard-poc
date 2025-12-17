@@ -60,7 +60,7 @@ impl PostUseCase for PostUseCaseImpl {
             .fetch_one(&self.db_pool)
             .await
         {
-            Ok(thread_schema) => super::to_domain(&thread_schema),
+            Ok(thread_schema) => super::thread_use_case::to_domain(&thread_schema),
             Err(_) => return Err(PostError::DbError),
         };
         match updated.posts.posts.pop() {
