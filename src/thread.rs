@@ -1,7 +1,7 @@
 mod post;
 mod query;
 
-use crate::thread::query::{PostsSchema, ThreadSchema};
+use crate::thread::query::{PostSchema, PostsSchema, ThreadSchema};
 use crate::{
     board::{Board, BoardUseCase},
     thread::query::{build_by_board_id_query, build_by_id_query},
@@ -106,7 +106,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
         board: Board,
         thread_creation: ThreadCreation,
     ) -> Result<Thread, ThreadError> {
-        let initial_post = Post {
+        let initial_post = PostSchema {
             id: Uuid::new_v4(),
             name: thread_creation.name,
             subject: thread_creation.subject,
