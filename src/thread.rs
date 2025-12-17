@@ -132,7 +132,16 @@ fn to_domain(thread_schema: &ThreadSchema) -> Thread {
         thread_id: thread_schema.thread_id,
         board_id: thread_schema.board_id,
         posts: Posts {
-            posts: posts.iter().map(|p| p.clone()).collect(), // TODO: simplify
+            posts: posts
+                .into_iter()
+                .map(|p| Post {
+                    id: p.id,
+                    name: p.name.clone(),
+                    subject: p.subject.clone(),
+                    content: p.content.clone(),
+                    media_url: p.media_url.clone(),
+                })
+                .collect(), // TODO: simplify
         },
     }
 }
