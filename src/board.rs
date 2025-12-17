@@ -21,15 +21,15 @@ pub trait BoardUseCase {
     fn get_all_boards(&self) -> impl Future<Output = Result<Vec<Board>, BoardError>> + Send;
 }
 
-#[derive(Clone)]
-pub struct BoardUseCaseImpl {
-    db_pool: PgPool,
+pub fn board_use_case(db_pool: PgPool) -> impl BoardUseCase {
+    BoardUseCaseImpl {
+        db_pool
+    }
 }
 
-impl BoardUseCaseImpl {
-    pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
-    }
+#[derive(Clone)]
+struct BoardUseCaseImpl {
+    db_pool: PgPool,
 }
 
 impl BoardUseCase for BoardUseCaseImpl {

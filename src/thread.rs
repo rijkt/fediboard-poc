@@ -10,7 +10,7 @@ use sqlx::PgPool;
 use sqlx::types::Json;
 use uuid::Uuid;
 
-pub use post::{Post, PostUseCase, PostUseCaseImpl, Posts, extract_post_by_id, extract_posts}; // TODO: only export trait
+pub use post::{Post, PostUseCase, Posts, extract_post_by_id, extract_posts, post_use_case};
 
 pub struct Thread {
     pub(crate) thread_id: Uuid,
@@ -49,15 +49,15 @@ pub trait ThreadUseCase {
     ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 
-#[derive(Clone)]
-pub struct ThreadUseCaseImpl {
-    db_pool: PgPool,
+pub fn thread_use_case(db_pool: PgPool) -> impl ThreadUseCase {
+    ThreadUseCaseImpl {
+        db_pool: db_pool.clone(),
+    }
 }
 
-impl ThreadUseCaseImpl {
-    pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
-    }
+#[derive(Clone)]
+struct ThreadUseCaseImpl {
+    db_pool: PgPool,
 }
 
 impl ThreadUseCase for ThreadUseCaseImpl {

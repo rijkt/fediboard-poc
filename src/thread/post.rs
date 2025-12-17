@@ -16,8 +16,15 @@ pub trait PostUseCase {
     ) -> impl Future<Output = Result<Post, PostError>> + Send;
 }
 
+pub fn post_use_case(db_pool: PgPool) -> impl PostUseCase {
+    PostUseCaseImpl {
+        db_pool,
+    }
+
+}
+
 #[derive(Clone)]
-pub struct PostUseCaseImpl {
+struct PostUseCaseImpl {
     db_pool: PgPool,
 }
 
@@ -31,12 +38,6 @@ pub fn extract_post_by_id(post_id: Uuid, thread: Thread) -> Option<Post> {
         .iter()
         .find(|post| post.id == post_id)
         .map(|p| p.to_owned())
-}
-
-impl PostUseCaseImpl {
-    pub(crate) fn new(db_pool: sqlx::Pool<sqlx::Postgres>) -> Self {
-        Self { db_pool }
-    }
 }
 
 impl PostUseCase for PostUseCaseImpl {
