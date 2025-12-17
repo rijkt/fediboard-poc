@@ -1,4 +1,5 @@
 use crate::thread::Thread;
+use crate::thread::query::PostSchema;
 use crate::thread::query::PostsSchema;
 use crate::thread::query::update_posts_query;
 use sqlx::PgPool;
@@ -43,18 +44,27 @@ impl PostUseCase for PostUseCaseImpl {
         let mut to_update = thread.posts.posts.clone();
         to_update.push(new_post);
         let update = PostsSchema {
-            posts: to_update.to_vec(),
+            posts: to_update
+                .into_iter()
+                .map(|p| PostSchema {
+                    id: p.id,
+                    name: p.name,
+                    subject: p.subject,
+                    content: p.content,
+                    media_url: p.media_url,
+                })
+                .collect(),
         };
         let update_ser = Sqlx_json(update);
-        let updated = match update_posts_query(&update_ser, &thread.thread_id)
+        let mut updated = match update_posts_query(&update_ser, &thread.thread_id)
             .fetch_one(&self.db_pool)
             .await
         {
-            Ok(thread) => thread,
+            Ok(thread_schema) => super::to_domain(&thread_schema),
             Err(_) => return Err(PostError::DbError),
         };
-        match (updated.posts).posts.last() {
-            Some(post) => Ok(post.to_owned()),
+        match updated.posts.posts.pop() {
+            Some(p) => Ok(p),
             None => Err(PostError::DbError),
         }
     }
