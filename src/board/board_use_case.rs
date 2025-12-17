@@ -30,9 +30,7 @@ impl BoardUseCase for BoardUseCaseImpl {
             .await;
         match fetch_result {
             Ok(schema) => Ok(to_board(&schema)),
-            Err(e) => Err(
-                map_error(e)
-            ),
+            Err(e) => Err(map_error(e)),
         }
     }
 
@@ -53,10 +51,9 @@ impl BoardUseCase for BoardUseCaseImpl {
 fn map_error(e: sqlx::Error) -> BoardError {
     match e {
         sqlx::Error::RowNotFound => BoardError::NotFound,
-        _ => BoardError::DbError
+        _ => BoardError::DbError,
     }
 }
-
 
 fn to_board(schema: &BoardSchema) -> Board {
     Board {

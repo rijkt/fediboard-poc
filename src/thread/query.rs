@@ -29,7 +29,10 @@ pub struct PostSchema {
 
 pub(super) type ThreadQuery<'q> = sqlx::query::QueryAs<'q, Postgres, ThreadSchema, PgArguments>;
 
-pub(super) fn build_create_query<'q>(board_id: Uuid, post_ser: &'q Json<PostsSchema>) -> ThreadQuery<'q> {
+pub(super) fn build_create_query<'q>(
+    board_id: Uuid,
+    post_ser: &'q Json<PostsSchema>,
+) -> ThreadQuery<'q> {
     sqlx::query_as::<_, ThreadSchema>(
         r#"
         insert into thread(board_id, posts)
