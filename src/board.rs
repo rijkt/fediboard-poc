@@ -1,11 +1,9 @@
-use serde::Serialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::board::board_query::BoardSchema;
 mod board_query;
 
-#[derive(Serialize)]
 pub(crate) struct Board {
     pub(crate) board_id: Uuid,
     pub(crate) name: String,

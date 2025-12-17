@@ -6,11 +6,18 @@ use axum::{
     http::StatusCode,
     routing::get,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{Board, BoardUseCase},
     infra::{AppState, DepenencyInjector, routing::thread_routes},
 };
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct BoardView {
+    pub(crate) board_id: String,
+    pub(crate) name: String,
+}
 
 pub(super) fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -30,19 +37,28 @@ pub(super) fn validate_board_name(params: &HashMap<String, String>) -> Result<&s
 async fn get_board_by_name(
     State(di): State<DepenencyInjector>,
     Path(params): Path<HashMap<String, String>>,
-) -> Result<Json<Board>, StatusCode> {
+) -> Result<Json<BoardView>, StatusCode> {
     let board_name = validate_board_name(&params)?;
     let use_case = di.board_use_case();
     match use_case.get_board_by_name(board_name).await {
-        Ok(board) => Ok(Json(board)),
+        Ok(board) => Ok(Json(to_view(board))),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
-async fn get_boards(State(di): State<DepenencyInjector>) -> Result<Json<Vec<Board>>, StatusCode> {
+async fn get_boards(
+    State(di): State<DepenencyInjector>,
+) -> Result<Json<Vec<BoardView>>, StatusCode> {
     let use_case = di.board_use_case();
     match use_case.get_all_boards().await {
-        Ok(boards) => Ok(Json(boards)),
+        Ok(boards) => Ok(Json(boards.into_iter().map(to_view).collect())),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+fn to_view(board: Board) -> BoardView {
+    BoardView {
+        board_id: board.board_id.to_string(),
+        name: board.name,
     }
 }
