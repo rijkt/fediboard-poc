@@ -3,6 +3,7 @@ use crate::board::board_query::BoardSchema;
 use sqlx::PgPool;
 
 pub enum BoardError {
+    NotFound,
     DbError,
 }
 
@@ -29,7 +30,9 @@ impl BoardUseCase for BoardUseCaseImpl {
             .await;
         match fetch_result {
             Ok(schema) => Ok(to_board(&schema)),
-            Err(_) => Err(BoardError::DbError),
+            Err(e) => Err(
+                map_error(e)
+            ),
         }
     }
 
@@ -42,8 +45,15 @@ impl BoardUseCase for BoardUseCaseImpl {
                 .iter()
                 .map(|schema: &BoardSchema| to_board(schema))
                 .collect()),
-            Err(_) => Err(BoardError::DbError),
+            Err(e) => Err(map_error(e)),
         }
+    }
+}
+
+fn map_error(e: sqlx::Error) -> BoardError {
+    match e {
+        sqlx::Error::RowNotFound => BoardError::NotFound,
+        _ => BoardError::DbError
     }
 }
 

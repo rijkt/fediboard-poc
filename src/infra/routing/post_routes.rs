@@ -14,7 +14,7 @@ use crate::{
         AppState,
         routing::{board_routes::validate_board_name, thread_routes::parse_thread_id},
     },
-    thread::{self, Post, PostUseCase, ThreadUseCase},
+    thread::{self, Post, PostError, PostUseCase, ThreadUseCase},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -69,7 +69,7 @@ async fn get_posts(
         .await
     {
         Ok(thread) => thread,
-        Err(_) => return Err(StatusCode::NOT_FOUND),
+        Err(_) => return Err(StatusCode::NOT_FOUND), // no further info given
     };
     let post_views = thread::extract_posts(thread)
         .iter()
@@ -130,7 +130,7 @@ async fn create_post(
     let created = post_use_case.post_into_thread(thread, new_post).await;
     match created {
         Ok(post) => Ok(Json(to_post_view(&post))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(err) => Err(to_status_code(err)),
     }
 }
 
@@ -141,5 +141,11 @@ fn form_to_post(post_creation: PostCreation) -> Post {
         subject: post_creation.subject,
         content: post_creation.content,
         media_url: post_creation.media_url,
+    }
+}
+
+fn to_status_code(err: PostError) -> StatusCode {
+    match err {
+        PostError::DbError => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }

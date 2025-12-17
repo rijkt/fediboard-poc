@@ -64,10 +64,7 @@ async fn get_thread(
         .await
     {
         Ok(thread) => thread,
-        Err(thread_error) => match thread_error {
-            ThreadError::IdError => return Err(StatusCode::BAD_REQUEST),
-            ThreadError::DbError => return Err(StatusCode::INTERNAL_SERVER_ERROR),
-        },
+        Err(thread_error) => return Err(to_status_code(thread_error)),
     };
     Ok(Json(to_thread_view(&thread)))
 }
@@ -91,7 +88,7 @@ async fn create_thread(
             let view = to_thread_view(&created);
             Ok(Json(view))
         }
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(err) => Err(to_status_code(err)),
     }
 }
 
@@ -113,5 +110,13 @@ fn to_thread_view(thread: &Thread) -> ThreadView {
         posts: PostsView {
             posts: post_arr.iter().map(to_post_view).collect(),
         },
+    }
+}
+
+fn to_status_code(err: ThreadError) -> StatusCode {
+    match err {
+        ThreadError::NotFound => StatusCode::NOT_FOUND,
+        ThreadError::DbError => StatusCode::INTERNAL_SERVER_ERROR,
+        ThreadError::IdError => StatusCode::BAD_REQUEST,
     }
 }

@@ -9,7 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::{Board, BoardUseCase},
+    board::{Board, BoardError, BoardUseCase},
     infra::{AppState, DepenencyInjector, routing::thread_routes},
 };
 
@@ -42,7 +42,7 @@ async fn get_board_by_name(
     let use_case = di.board_use_case();
     match use_case.get_board_by_name(board_name).await {
         Ok(board) => Ok(Json(to_view(board))),
-        Err(_) => Err(StatusCode::NOT_FOUND),
+        Err(err) => Err(to_status_code(err)),
     }
 }
 
@@ -52,7 +52,7 @@ async fn get_boards(
     let use_case = di.board_use_case();
     match use_case.get_all_boards().await {
         Ok(boards) => Ok(Json(boards.into_iter().map(to_view).collect())),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(err) => Err(to_status_code(err)),
     }
 }
 
@@ -60,5 +60,12 @@ fn to_view(board: Board) -> BoardView {
     BoardView {
         board_id: board.board_id.to_string(),
         name: board.name,
+    }
+}
+
+fn to_status_code(err: BoardError) -> StatusCode {
+    match err {
+        BoardError::NotFound => StatusCode::NOT_FOUND,
+        BoardError::DbError => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }

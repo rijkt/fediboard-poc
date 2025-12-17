@@ -6,6 +6,7 @@ use crate::thread::post::Post;
 use crate::thread::query::PostSchema;
 use crate::thread::query::PostsSchema;
 use crate::thread::query::ThreadSchema;
+use sqlx::Error;
 use sqlx::PgPool;
 use sqlx::types::Json;
 use uuid::Uuid;
@@ -20,6 +21,7 @@ pub struct ThreadCreation {
 pub enum ThreadError {
     IdError,
     DbError,
+    NotFound,
 }
 
 pub trait ThreadUseCase {
@@ -69,7 +71,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
             .await;
         match fetch_result {
             Ok(thread) => Ok(to_domain(&thread)),
-            Err(_) => Err(ThreadError::DbError),
+            Err(err) => Err(map_error(err)),
         }
     }
 
@@ -135,5 +137,12 @@ pub(crate) fn to_domain(thread_schema: &ThreadSchema) -> Thread {
                 })
                 .collect(), // TODO: simplify
         },
+    }
+}
+
+fn map_error(err: sqlx::Error) -> ThreadError {
+    match err {
+        Error::RowNotFound => ThreadError::NotFound,
+        _ => ThreadError::DbError,
     }
 }
