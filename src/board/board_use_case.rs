@@ -7,6 +7,13 @@ pub enum BoardError {
     DbError,
 }
 
+pub trait BoardPersistence {
+    async fn find_board_by_name(&self, board_name: &str) -> Result<Board, BoardError>;
+
+    async fn find_all_boards(&self) -> Result<Vec<Board>, BoardError>;
+
+}
+
 pub trait BoardUseCase {
     fn get_board_by_name(
         &self,
@@ -15,15 +22,17 @@ pub trait BoardUseCase {
     fn get_all_boards(&self) -> impl Future<Output = Result<Vec<Board>, BoardError>> + Send;
 }
 
-pub fn board_use_case(db_pool: PgPool) -> impl BoardUseCase {
-    BoardUseCaseImpl { db_pool }
+pub fn board_use_case(db_pool: PgPool, persistence: impl BoardPersistence + Sync) -> impl BoardUseCase {
+    BoardUseCaseImpl { db_pool, persistence}
 }
 
-struct BoardUseCaseImpl {
+struct BoardUseCaseImpl<T> 
+where T: BoardPersistence {
     db_pool: PgPool,
+    persistence: T
 }
 
-impl BoardUseCase for BoardUseCaseImpl {
+impl<T: BoardPersistence + Sync> BoardUseCase for BoardUseCaseImpl<T> {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, BoardError> {
         let fetch_result = super::board_query::board_by_name_query(board_name)
             .fetch_one(&self.db_pool)
