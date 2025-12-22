@@ -2,7 +2,7 @@ use sqlx::PgPool;
 
 use crate::{
     board::{self, BoardUseCase},
-    infra::persistence::BoardPersistenceImpl,
+    infra::persistence::BoardPgPersistence,
     thread::{PostUseCase, ThreadUseCase},
 };
 
@@ -13,7 +13,7 @@ pub struct UseCaseRegistry {
 
 impl UseCaseRegistry {
     pub fn board_use_case(&self) -> impl BoardUseCase {
-        board::board_use_case(BoardPersistenceImpl::new(self.db_pool.clone()))
+        board::board_use_case(BoardPgPersistence::new(self.db_pool.clone()))
     }
 
     pub fn thread_use_case(&self) -> impl ThreadUseCase {
