@@ -1,6 +1,4 @@
 use super::Board;
-use crate::board::board_query::BoardSchema;
-use sqlx::PgPool;
 
 pub enum BoardError {
     NotFound,
@@ -8,10 +6,12 @@ pub enum BoardError {
 }
 
 pub trait BoardPersistence {
-    async fn find_board_by_name(&self, board_name: &str) -> Result<Board, BoardError>;
+    fn find_board_by_name(
+        &self,
+        board_name: &str,
+    ) -> impl Future<Output = Result<Board, BoardError>> + Send;
 
-    async fn find_all_boards(&self) -> Result<Vec<Board>, BoardError>;
-
+    fn find_all_boards(&self) -> impl Future<Output = Result<Vec<Board>, BoardError>> + Send;
 }
 
 pub trait BoardUseCase {
@@ -22,51 +22,23 @@ pub trait BoardUseCase {
     fn get_all_boards(&self) -> impl Future<Output = Result<Vec<Board>, BoardError>> + Send;
 }
 
-pub fn board_use_case(db_pool: PgPool, persistence: impl BoardPersistence + Sync) -> impl BoardUseCase {
-    BoardUseCaseImpl { db_pool, persistence}
+pub fn board_use_case(persistence: impl BoardPersistence + Sync) -> impl BoardUseCase {
+    BoardUseCaseImpl { persistence }
 }
 
-struct BoardUseCaseImpl<T> 
-where T: BoardPersistence {
-    db_pool: PgPool,
-    persistence: T
+struct BoardUseCaseImpl<T>
+where
+    T: BoardPersistence,
+{
+    persistence: T,
 }
 
 impl<T: BoardPersistence + Sync> BoardUseCase for BoardUseCaseImpl<T> {
     async fn get_board_by_name(&self, board_name: &str) -> Result<Board, BoardError> {
-        let fetch_result = super::board_query::board_by_name_query(board_name)
-            .fetch_one(&self.db_pool)
-            .await;
-        match fetch_result {
-            Ok(schema) => Ok(to_board(&schema)),
-            Err(e) => Err(map_error(e)),
-        }
+        self.persistence.find_board_by_name(board_name).await
     }
 
     async fn get_all_boards(&self) -> Result<Vec<Board>, BoardError> {
-        let fetch_result = super::board_query::all_boards_query()
-            .fetch_all(&self.db_pool)
-            .await;
-        match fetch_result {
-            Ok(boards) => Ok(boards
-                .iter()
-                .map(|schema: &BoardSchema| to_board(schema))
-                .collect()),
-            Err(e) => Err(map_error(e)),
-        }
-    }
-}
-
-fn map_error(e: sqlx::Error) -> BoardError {
-    match e {
-        sqlx::Error::RowNotFound => BoardError::NotFound,
-        _ => BoardError::DbError,
-    }
-}
-
-fn to_board(schema: &BoardSchema) -> Board {
-    Board {
-        board_id: schema.board_id,
-        name: schema.name.to_owned(),
+        self.persistence.find_all_boards().await
     }
 }

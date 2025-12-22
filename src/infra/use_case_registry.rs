@@ -13,10 +13,7 @@ pub struct UseCaseRegistry {
 
 impl UseCaseRegistry {
     pub fn board_use_case(&self) -> impl BoardUseCase {
-        board::board_use_case(
-            self.db_pool.clone(),
-            BoardPersistenceImpl::new(self.db_pool.clone()),
-        )
+        board::board_use_case(BoardPersistenceImpl::new(self.db_pool.clone()))
     }
 
     pub fn thread_use_case(&self) -> impl ThreadUseCase {
