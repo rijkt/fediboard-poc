@@ -1,7 +1,8 @@
 use sqlx::PgPool;
 
 use crate::{
-    board::{self, Board, BoardPersistence, BoardUseCase},
+    board::{self, BoardUseCase},
+    infra::persistence::BoardPersistenceImpl,
     thread::{PostUseCase, ThreadUseCase},
 };
 
@@ -12,7 +13,7 @@ pub struct UseCaseRegistry {
 
 impl UseCaseRegistry {
     pub fn board_use_case(&self) -> impl BoardUseCase {
-        board::board_use_case(self.db_pool.clone(), BoardPersistenceImpl{})
+        board::board_use_case(self.db_pool.clone(), BoardPersistenceImpl {})
     }
 
     pub fn thread_use_case(&self) -> impl ThreadUseCase {
@@ -26,19 +27,4 @@ impl UseCaseRegistry {
 
 pub fn build_registry(db_pool: PgPool) -> UseCaseRegistry {
     UseCaseRegistry { db_pool }
-}
-
-struct BoardPersistenceImpl {
-
-}
-
-impl BoardPersistence for BoardPersistenceImpl {
-    async fn find_board_by_name(&self, board_name: &str) -> Result<Board, board::BoardError> {
-        todo!()
-    }
-    
-    async fn find_all_boards(&self) -> Result<Vec<Board>, board::BoardError> {
-        todo!()
-    }
-
 }

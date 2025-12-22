@@ -3,6 +3,7 @@ mod dependency_injection;
 mod http;
 mod routing;
 mod use_case_registry;
+mod persistence;
 
 pub use dependency_injection::DepenencyInjector;
 pub use http::serve;
