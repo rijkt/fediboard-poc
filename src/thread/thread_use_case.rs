@@ -1,14 +1,6 @@
 use super::Thread;
 use crate::board::Board;
 use crate::board::BoardUseCase;
-use crate::thread::Posts;
-use crate::thread::post::Post;
-use crate::thread::query::PostSchema;
-use crate::thread::query::PostsSchema;
-use crate::thread::query::ThreadSchema;
-use sqlx::Error;
-use sqlx::PgPool;
-use sqlx::types::Json;
 use uuid::Uuid;
 
 pub struct ThreadCreation {
@@ -28,7 +20,6 @@ pub trait ThreadPersistence {
     fn find_thread_by_id(
         &self,
         thread_id: &Uuid,
-        board_name: &str,
     ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 
     fn find_threads_by_board(
@@ -63,35 +54,30 @@ pub trait ThreadUseCase {
     ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 
-pub fn thread_use_case(db_pool: PgPool) -> impl ThreadUseCase {
-    ThreadUseCaseImpl {
-        db_pool: db_pool.clone(),
-    }
+pub fn thread_use_case(persistence: impl ThreadPersistence + Sync) -> impl ThreadUseCase {
+    ThreadUseCaseImpl { persistence }
 }
 
-pub(crate) struct ThreadUseCaseImpl {
-    pub(crate) db_pool: PgPool,
+struct ThreadUseCaseImpl<T>
+where
+    T: ThreadPersistence,
+{
+    persistence: T,
 }
 
-impl ThreadUseCase for ThreadUseCaseImpl {
+impl<T: ThreadPersistence + Sync> ThreadUseCase for ThreadUseCaseImpl<T> {
     async fn get_thread_by_id(
         &self,
         thread_id: &str,
         _board_name: &str,
     ) -> Result<Thread, ThreadError> {
-        // TODO: validate with board_name param
+        // TODO: validate with board_name param, maybe pass board
         let uuid_result = Uuid::parse_str(thread_id);
         let thread_uuid = match uuid_result {
             Ok(id) => id,
             Err(_) => return Err(ThreadError::IdError),
         };
-        let fetch_result = super::query::build_by_id_query(&thread_uuid)
-            .fetch_one(&self.db_pool)
-            .await;
-        match fetch_result {
-            Ok(thread) => Ok(to_domain(&thread)),
-            Err(err) => Err(map_error(err)),
-        }
+        self.persistence.find_thread_by_id(&thread_uuid).await
     }
 
     fn get_threads_by_board(
@@ -104,13 +90,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
                 Ok(board) => board,
                 Err(_) => return Err(ThreadError::DbError), // TODO
             };
-            let fetch_result = super::query::build_by_board_id_query(&board.board_id)
-                .fetch_all(&self.db_pool) // TODO: paginate
-                .await;
-            match fetch_result {
-                Ok(threads) => Ok(threads.iter().map(to_domain).collect()),
-                Err(_) => Err(ThreadError::DbError),
-            }
+            self.persistence.find_threads_by_board(&board).await
         }
     }
 
@@ -119,49 +99,6 @@ impl ThreadUseCase for ThreadUseCaseImpl {
         board: Board,
         thread_creation: ThreadCreation,
     ) -> Result<Thread, ThreadError> {
-        let initial_post = PostSchema {
-            id: Uuid::new_v4(),
-            name: thread_creation.name,
-            subject: thread_creation.subject,
-            content: thread_creation.content,
-            media_url: thread_creation.media_url,
-        };
-        let post_ser = Json(PostsSchema {
-            posts: vec![initial_post],
-        });
-        let create_result = super::query::build_create_query(board.board_id, &post_ser)
-            .fetch_one(&self.db_pool)
-            .await;
-        match create_result {
-            Ok(created) => Ok(to_domain(&created)),
-            Err(_) => Err(ThreadError::DbError),
-        }
-    }
-}
-
-pub(crate) fn to_domain(thread_schema: &ThreadSchema) -> Thread {
-    let posts = &thread_schema.posts.posts;
-    Thread {
-        thread_id: thread_schema.thread_id,
-        board_id: thread_schema.board_id,
-        posts: Posts {
-            posts: posts
-                .iter()
-                .map(|p| Post {
-                    id: p.id,
-                    name: p.name.clone(),
-                    subject: p.subject.clone(),
-                    content: p.content.clone(),
-                    media_url: p.media_url.clone(),
-                })
-                .collect(), // TODO: simplify
-        },
-    }
-}
-
-fn map_error(err: sqlx::Error) -> ThreadError {
-    match err {
-        Error::RowNotFound => ThreadError::NotFound,
-        _ => ThreadError::DbError,
+        self.persistence.insert_thread(board, thread_creation).await
     }
 }

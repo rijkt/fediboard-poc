@@ -19,8 +19,7 @@ impl ThreadPgPersistence {
 impl ThreadPersistence for ThreadPgPersistence {
     async fn find_thread_by_id(
         &self,
-        thread_id: &Uuid,
-        board_name: &str,
+        thread_id: &Uuid
     ) -> Result<crate::thread::Thread, crate::thread::ThreadError> {
         let fetch_result = query::build_by_id_query(&thread_id)
             .fetch_one(&self.db_pool)

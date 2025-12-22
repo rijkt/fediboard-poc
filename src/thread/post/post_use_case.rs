@@ -1,7 +1,9 @@
 use super::Post;
+use crate::thread::Posts;
 use crate::thread::Thread;
 use crate::thread::query::PostSchema;
 use crate::thread::query::PostsSchema;
+use crate::thread::query::ThreadSchema;
 use sqlx::PgPool;
 use sqlx::types::Json;
 
@@ -44,12 +46,32 @@ impl PostUseCase for PostUseCaseImpl {
         let update_ser = Json(update);
         let query_result = super::super::query::update_posts_query(&update_ser, &thread.thread_id);
         let mut updated = match query_result.fetch_one(&self.db_pool).await {
-            Ok(thread_schema) => super::super::thread_use_case::to_domain(&thread_schema),
+            Ok(thread_schema) => to_domain(&thread_schema),
             Err(_) => return Err(PostError::DbError),
         };
         match updated.posts.posts.pop() {
             Some(p) => Ok(p),
             None => Err(PostError::DbError),
         }
+    }
+}
+
+fn to_domain(thread_schema: &ThreadSchema) -> Thread {
+    let posts = &thread_schema.posts.posts;
+    Thread {
+        thread_id: thread_schema.thread_id,
+        board_id: thread_schema.board_id,
+        posts: Posts {
+            posts: posts
+                .iter()
+                .map(|p| Post {
+                    id: p.id,
+                    name: p.name.clone(),
+                    subject: p.subject.clone(),
+                    content: p.content.clone(),
+                    media_url: p.media_url.clone(),
+                })
+                .collect(), // TODO: simplify
+        },
     }
 }
