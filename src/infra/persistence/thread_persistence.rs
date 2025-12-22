@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Error, prelude::FromRow, types::Json};
 use uuid::Uuid;
 
-use crate::{board::Board, thread::{Post, Posts, Thread, ThreadError, ThreadPersistence}};
+use crate::{
+    board::Board,
+    thread::{Post, Posts, Thread, ThreadError, ThreadPersistence},
+};
 
 mod query;
 
@@ -19,9 +22,9 @@ impl ThreadPgPersistence {
 impl ThreadPersistence for ThreadPgPersistence {
     async fn find_thread_by_id(
         &self,
-        thread_id: &Uuid
+        thread_id: &Uuid,
     ) -> Result<crate::thread::Thread, crate::thread::ThreadError> {
-        let fetch_result = query::build_by_id_query(&thread_id)
+        let fetch_result = query::build_by_id_query(thread_id)
             .fetch_one(&self.db_pool)
             .await;
         match fetch_result {
@@ -32,7 +35,7 @@ impl ThreadPersistence for ThreadPgPersistence {
 
     async fn find_threads_by_board(
         &self,
-        board: &Board
+        board: &Board,
     ) -> Result<Vec<crate::thread::Thread>, crate::thread::ThreadError> {
         let fetch_result = query::build_by_board_id_query(&board.board_id)
             .fetch_all(&self.db_pool) // TODO: paginate
@@ -63,6 +66,33 @@ impl ThreadPersistence for ThreadPgPersistence {
             .await;
         match create_result {
             Ok(created) => Ok(to_domain(&created)),
+            Err(_) => Err(ThreadError::DbError),
+        }
+    }
+
+    async fn insert_post(
+        &self,
+        thread: &Thread,
+        post: Post,
+    ) -> Result<Thread, crate::thread::ThreadError> {
+        let mut to_update = thread.posts.posts.clone();
+        to_update.push(post);
+        let update = PostsSchema {
+            posts: to_update
+                .into_iter()
+                .map(|p| PostSchema {
+                    id: p.id,
+                    name: p.name,
+                    subject: p.subject,
+                    content: p.content,
+                    media_url: p.media_url,
+                })
+                .collect(),
+        };
+        let update_ser = Json(update);
+        let query_result = query::update_posts_query(&update_ser, &thread.thread_id);
+        match query_result.fetch_one(&self.db_pool).await {
+            Ok(thread_schema) => Ok(to_domain(&thread_schema)),
             Err(_) => Err(ThreadError::DbError),
         }
     }

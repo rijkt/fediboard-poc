@@ -1,6 +1,7 @@
 use super::Thread;
 use crate::board::Board;
 use crate::board::BoardUseCase;
+use crate::thread::Post;
 use uuid::Uuid;
 
 pub struct ThreadCreation {
@@ -31,6 +32,12 @@ pub trait ThreadPersistence {
         &self,
         board: Board,
         thread_creation: ThreadCreation,
+    ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
+
+    fn insert_post(
+        &self,
+        thread: &Thread,
+        post: Post,
     ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
 }
 

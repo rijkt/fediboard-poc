@@ -1,5 +1,4 @@
 mod post;
-mod query;
 mod thread_use_case;
 
 use uuid::Uuid;

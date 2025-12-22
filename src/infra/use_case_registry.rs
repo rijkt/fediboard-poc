@@ -21,7 +21,7 @@ impl UseCaseRegistry {
     }
 
     pub fn post_use_case(&self) -> impl PostUseCase {
-        crate::thread::post_use_case(self.db_pool.clone())
+        crate::thread::post_use_case(ThreadPgPersistence::new(self.db_pool.clone()))
     }
 }
 
