@@ -19,7 +19,7 @@ pub async fn create_app_state() -> AppState {
         dotenvy::var("DATABASE_URL").expect("Env var DATABASE_URL is required for this service.");
     let port: String = dotenvy::var("PORT").unwrap_or("80".to_owned());
     let db_pool = db::init_db_pool(db_url).await;
-    let use_case_registry = use_case_registry::build_registry(db_pool.clone());
+    let use_case_registry = use_case_registry::build_registry(db_pool);
     AppState {
         port,
         di: DepenencyInjector { use_case_registry },
