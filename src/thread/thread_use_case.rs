@@ -24,6 +24,25 @@ pub enum ThreadError {
     NotFound,
 }
 
+pub trait ThreadPersistence {
+    fn find_thread_by_id(
+        &self,
+        thread_id: &Uuid,
+        board_name: &str,
+    ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
+
+    fn find_threads_by_board(
+        &self,
+        board: &Board,
+    ) -> impl Future<Output = Result<Vec<Thread>, ThreadError>> + Send;
+
+    fn insert_thread(
+        &self,
+        board: Board,
+        thread_creation: ThreadCreation,
+    ) -> impl Future<Output = Result<Thread, ThreadError>> + Send;
+}
+
 pub trait ThreadUseCase {
     fn get_thread_by_id(
         &self,
@@ -81,7 +100,7 @@ impl ThreadUseCase for ThreadUseCaseImpl {
         board_use_case: impl BoardUseCase + Send,
     ) -> impl Future<Output = Result<Vec<Thread>, ThreadError>> + Send {
         async move {
-            let board = match board_use_case.get_board_by_name(board_name).await {
+            let board: Board = match board_use_case.get_board_by_name(board_name).await {
                 Ok(board) => board,
                 Err(_) => return Err(ThreadError::DbError), // TODO
             };

@@ -8,7 +8,7 @@ use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
 pub struct BoardPgPersistence {
-    pub(crate) db_pool: sqlx::Pool<sqlx::Postgres>,
+    db_pool: sqlx::Pool<sqlx::Postgres>,
 }
 
 impl BoardPgPersistence {
