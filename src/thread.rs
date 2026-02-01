@@ -1,31 +1,17 @@
 mod post;
-mod query;
-mod thread_handler;
+mod thread_use_case;
 
-use axum::{
-    Router,
-    routing::{get, post},
-};
-use sqlx::prelude::FromRow;
-use sqlx::types::Json;
 use uuid::Uuid;
 
-use crate::thread::{
-    post::Posts,
-    thread_handler::{create_thread, get_thread, get_threads},
+pub use post::{
+    Post, PostError, PostUseCase, Posts, extract_post_by_id, extract_posts, post_use_case,
+};
+pub use thread_use_case::{
+    ThreadCreation, ThreadError, ThreadPersistence, ThreadUseCase, thread_use_case,
 };
 
-pub(crate) fn routes() -> Router {
-    Router::new()
-        .route("/", get(get_threads))
-        .route("/", post(create_thread))
-        .route("/{thread_id}", get(get_thread))
-        .nest("/{thread_id}/posts", post::routes())
-}
-
-#[derive(FromRow)]
-struct Thread {
-    pub(crate) thread_id: Uuid,
-    pub(crate) board_id: Uuid,
-    pub(crate) posts: Json<Posts>,
+pub struct Thread {
+    pub thread_id: Uuid,
+    pub board_id: Uuid,
+    pub posts: Posts,
 }
