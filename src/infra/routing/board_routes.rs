@@ -35,6 +35,15 @@ pub(super) fn validate_board_name(params: &HashMap<String, String>) -> Result<&s
     }
 }
 
+#[utoipa::path(
+    context_path = "/api/boards/",
+    get,
+    path = "/{board_name}",
+    responses(
+        (status = 200, body = BoardView, content_type = "application/json"),
+        (status = 404)
+    )
+)]
 async fn get_board_by_name(
     State(di): State<DepenencyInjector>,
     Path(params): Path<HashMap<String, String>>,
