@@ -7,6 +7,7 @@ use axum::{
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{
@@ -17,12 +18,12 @@ use crate::{
     thread::{self, Post, PostError, PostUseCase, ThreadUseCase},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) struct PostsView {
     pub(super) posts: Vec<PostView>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) struct PostView {
     pub(super) id: String,
     pub(super) name: Option<String>,

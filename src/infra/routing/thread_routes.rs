@@ -9,9 +9,10 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) struct ThreadView {
     pub(super) thread_id: String,
     pub(super) board_id: String,
@@ -34,6 +35,14 @@ pub(super) fn parse_thread_id(params: &HashMap<String, String>) -> Result<&str, 
     }
 }
 
+#[utoipa::path(
+    context_path = "/api/boards/{board_name}/threads/",
+    get,
+    path = "",
+    responses(
+        (status = 200, body = Vec<ThreadView>, content_type = "application/json")
+    )
+)]
 async fn get_threads(
     State(app_state): State<AppState>,
     Path(params): Path<HashMap<String, String>>,
