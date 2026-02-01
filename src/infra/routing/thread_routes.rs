@@ -9,9 +9,10 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Form, Json, extract::Path};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) struct ThreadView {
     pub(super) thread_id: String,
     pub(super) board_id: String,

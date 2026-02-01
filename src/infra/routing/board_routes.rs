@@ -7,13 +7,14 @@ use axum::{
     routing::get,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{
     board::{Board, BoardError, BoardUseCase},
     infra::{AppState, DepenencyInjector, routing::thread_routes},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) struct BoardView {
     pub(crate) board_id: String,
     pub(crate) name: String,
@@ -46,6 +47,14 @@ async fn get_board_by_name(
     }
 }
 
+#[utoipa::path(
+    context_path = "/api/boards",
+    get,
+    path = "",
+    responses(
+        (status = 200, body = Vec<BoardView>, content_type = "application/json")
+    )
+)]
 async fn get_boards(
     State(di): State<DepenencyInjector>,
 ) -> Result<Json<Vec<BoardView>>, StatusCode> {
